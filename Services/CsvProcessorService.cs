@@ -109,13 +109,6 @@ public class CsvProcessorService
         {
             lineNumber++;
             
-            // Verificar se atingiu o limite máximo de linhas a processar
-            if (config.File.MaxLines.HasValue && linesProcessedCount >= config.File.MaxLines.Value)
-            {
-                Console.WriteLine($"⚠️  Limite de {config.File.MaxLines.Value} linhas processadas atingido. Encerrando...");
-                break;
-            }
-            
             var record = new CsvRecord
             {
                 LineNumber = lineNumber,
@@ -137,11 +130,14 @@ public class CsvProcessorService
                 continue;
             }
 
-            linesProcessedCount++; // Incrementar apenas linhas válidas processadas
             batch.Add(record);
+            linesProcessedCount++; // Incrementar após adicionar ao batch
 
-            // Processar lote quando atingir o tamanho configurado
-            if (batch.Count >= config.File.BatchLines)
+            // Processar lote quando atingir o tamanho configurado OU quando atingir o limite máximo de linhas
+            var shouldProcessBatch = batch.Count >= config.File.BatchLines ||
+                                    (config.File.MaxLines.HasValue && linesProcessedCount >= config.File.MaxLines.Value);
+            
+            if (shouldProcessBatch)
             {
                 var batchTimer = Stopwatch.StartNew();
                 var errors = await _apiClientService.ProcessBatchAsync(httpClient, batch, config, headers, dryRun);
@@ -172,6 +168,13 @@ public class CsvProcessorService
                         totalSuccess, 
                         totalErrors);
                     lastCheckpointSave = DateTime.Now;
+                }
+                
+                // Verificar se atingiu o limite máximo de linhas após processar o batch
+                if (config.File.MaxLines.HasValue && linesProcessedCount >= config.File.MaxLines.Value)
+                {
+                    Console.WriteLine($"✅ Limite de {config.File.MaxLines.Value} linhas processadas atingido. Encerrando...");
+                    break;
                 }
             }
         }

@@ -2,7 +2,7 @@ file:
     inputPath: "data/input.csv"
     batchLines: 100
     startLine: 1
-    # maxLines: 1000  # Opcional: limita o número de linhas a processar (útil para testes)
+    maxLines: 1  # Opcional: limita o número de linhas a processar (útil para testes)
     logPath: "logs/process.log"
     csvDelimiter: ","
     checkpointPath: "checkpoints/progress.json"
