@@ -6,6 +6,7 @@ file:
     logPath: "logs/process.log"
     csvDelimiter: ","
     checkpointPath: "checkpoints/progress.json"
+    resetCheckpoint: false  # Se true, ignora checkpoint existente e processa desde o início
     mapping:
         - column: "Name"
           type: "string"

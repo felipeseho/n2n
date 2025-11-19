@@ -46,6 +46,10 @@ public class ConfigurationService
         if (options.MaxLines.HasValue)
             config.File.MaxLines = options.MaxLines.Value;
         
+        // Sobrescrever resetCheckpoint se fornecido
+        if (options.ResetCheckpoint)
+            config.File.ResetCheckpoint = options.ResetCheckpoint;
+        
         // Sobrescrever configurações de API se fornecidas
         if (!string.IsNullOrWhiteSpace(options.EndpointUrl))
             config.Api.EndpointUrl = options.EndpointUrl;

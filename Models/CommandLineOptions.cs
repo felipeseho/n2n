@@ -26,4 +26,5 @@ public class CommandLineOptions
     public bool Verbose { get; set; }
     public int? MaxParallelism { get; set; }
     public bool DryRun { get; set; }
+    public bool ResetCheckpoint { get; set; }
 }

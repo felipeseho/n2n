@@ -71,6 +71,10 @@ public class Program
             aliases: new[] { "--dry-run", "--test" },
             description: "Modo de teste: não faz requisições reais");
 
+        var resetCheckpointOption = new Option<bool>(
+            aliases: new[] { "--reset-checkpoint", "--reset" },
+            description: "Reinicia o checkpoint e processa o arquivo desde o início");
+
         // Adicionar opções ao comando raiz
         rootCommand.AddOption(configOption);
         rootCommand.AddOption(inputOption);
@@ -85,6 +89,7 @@ public class Program
         rootCommand.AddOption(timeoutOption);
         rootCommand.AddOption(verboseOption);
         rootCommand.AddOption(dryRunOption);
+        rootCommand.AddOption(resetCheckpointOption);
 
         // Handler do comando usando binding individual (limitado a 8 parâmetros)
         rootCommand.SetHandler(
@@ -97,8 +102,9 @@ public class Program
                 var timeout = parseResult.GetValueForOption(timeoutOption);
                 var dryRun = parseResult.GetValueForOption(dryRunOption);
                 var maxLines = parseResult.GetValueForOption(maxLinesOption);
+                var resetCheckpoint = parseResult.GetValueForOption(resetCheckpointOption);
                 
-                await ProcessCsvAsync(configPath, inputPath, batchLines, logPath, delimiter, startLine, maxLines, endpoint, authToken, method, timeout, verbose, dryRun);
+                await ProcessCsvAsync(configPath, inputPath, batchLines, logPath, delimiter, startLine, maxLines, endpoint, authToken, method, timeout, verbose, dryRun, resetCheckpoint);
             },
             configOption,
             inputOption,
@@ -126,7 +132,8 @@ public class Program
         string? method,
         int? timeout,
         bool verbose,
-        bool dryRun)
+        bool dryRun,
+        bool resetCheckpoint)
     {
         try
         {
@@ -153,7 +160,8 @@ public class Program
                 Method = method,
                 RequestTimeout = timeout,
                 Verbose = verbose,
-                DryRun = dryRun
+                DryRun = dryRun,
+                ResetCheckpoint = resetCheckpoint
             };
 
             if (verbose)
@@ -189,6 +197,16 @@ public class Program
 
             // Criar diretórios necessários
             configService.EnsureDirectoriesExist(config);
+
+            // Resetar checkpoint se solicitado (via linha de comando ou config.yaml)
+            if (config.File.ResetCheckpoint && !string.IsNullOrWhiteSpace(config.File.CheckpointPath))
+            {
+                if (File.Exists(config.File.CheckpointPath))
+                {
+                    File.Delete(config.File.CheckpointPath);
+                    Console.WriteLine("🔄 Checkpoint resetado. Processamento iniciará do início.");
+                }
+            }
 
             // Inicializar ApiClientService com a configuração da API e MetricsService
             var apiClientService = new ApiClientService(loggingService, config.Api, metricsService);

@@ -12,6 +12,7 @@ public class FileConfiguration
     public int StartLine { get; set; } = 1;
     public int? MaxLines { get; set; }
     public string? CheckpointPath { get; set; }
+    public bool ResetCheckpoint { get; set; } = false;
     public List<ColumnMapping> Mapping { get; set; } = new();
 }
 
