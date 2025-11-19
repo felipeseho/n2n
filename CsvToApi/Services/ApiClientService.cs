@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -12,12 +13,14 @@ namespace CsvToApi.Services;
 public class ApiClientService
 {
     private readonly LoggingService _loggingService;
+    private readonly MetricsService? _metricsService;
     private readonly SemaphoreSlim? _rateLimiter;
     private readonly Timer? _rateLimitTimer;
 
-    public ApiClientService(LoggingService loggingService, ApiConfiguration apiConfig)
+    public ApiClientService(LoggingService loggingService, ApiConfiguration apiConfig, MetricsService? metricsService = null)
     {
         _loggingService = loggingService;
+        _metricsService = metricsService;
         
         // Configurar rate limiting se especificado
         if (apiConfig.MaxRequestsPerSecond.HasValue && apiConfig.MaxRequestsPerSecond.Value > 0)
@@ -121,6 +124,7 @@ public class ApiClientService
     {
         int attempts = 0;
         Exception? lastException = null;
+        var requestTimer = Stopwatch.StartNew();
 
         while (attempts < config.Api.RetryAttempts)
         {
@@ -144,6 +148,17 @@ public class ApiClientService
                     throw new NotSupportedException($"Método HTTP '{config.Api.Method}' não suportado");
                 }
 
+                requestTimer.Stop();
+                
+                // Registrar métricas
+                _metricsService?.RecordResponseTime(requestTimer.ElapsedMilliseconds);
+                _metricsService?.RecordHttpStatusCode((int)response.StatusCode);
+                
+                if (attempts > 1)
+                {
+                    _metricsService?.RecordRetry();
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     // Se for erro do servidor (5xx) ou timeout, tentar novamente
@@ -153,6 +168,7 @@ public class ApiClientService
                         {
                             Console.WriteLine($"Tentativa {attempts}/{config.Api.RetryAttempts} falhou (HTTP {(int)response.StatusCode}). Aguardando {config.Api.RetryDelaySeconds}s...");
                             await Task.Delay(config.Api.RetryDelaySeconds * 1000);
+                            requestTimer.Restart();
                             continue;
                         }
                     }
@@ -160,9 +176,11 @@ public class ApiClientService
                     var errorMessage = await response.Content.ReadAsStringAsync();
                     await _loggingService.LogError(config.File.LogPath, record, (int)response.StatusCode, 
                         errorMessage, headers);
+                    _metricsService?.RecordError();
                     return false;
                 }
 
+                _metricsService?.RecordSuccess();
                 return true;
             }
             catch (HttpRequestException ex)
@@ -172,6 +190,7 @@ public class ApiClientService
                 {
                     Console.WriteLine($"Tentativa {attempts}/{config.Api.RetryAttempts} falhou ({ex.Message}). Aguardando {config.Api.RetryDelaySeconds}s...");
                     await Task.Delay(config.Api.RetryDelaySeconds * 1000);
+                    requestTimer.Restart();
                     continue;
                 }
             }
@@ -182,6 +201,7 @@ public class ApiClientService
                 {
                     Console.WriteLine($"Tentativa {attempts}/{config.Api.RetryAttempts} timeout. Aguardando {config.Api.RetryDelaySeconds}s...");
                     await Task.Delay(config.Api.RetryDelaySeconds * 1000);
+                    requestTimer.Restart();
                     continue;
                 }
             }
@@ -190,6 +210,7 @@ public class ApiClientService
         // Todas as tentativas falharam
         await _loggingService.LogError(config.File.LogPath, record, 500, 
             lastException?.Message ?? "Todas as tentativas falharam", headers);
+        _metricsService?.RecordError();
         return false;
     }
 

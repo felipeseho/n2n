@@ -16,6 +16,7 @@
 - [x] Rate Limiting (controle de requisições/segundo)
 - [x] Modo Dry Run (teste sem requisições reais)
 - [x] Checkpoint/Resume (retomar processamento)
+- [x] Métricas e Dashboard de performance
 
 ## 🚀 Melhorias Futuras
 
@@ -36,15 +37,6 @@
       compression: "gzip"
   ```
 
-- [ ] **Métricas**: Dashboard de performance
-  ```
-  Total: 10000 linhas
-  Sucesso: 9500 (95%)
-  Erros: 500 (5%)
-  Tempo: 5min 23s
-  Velocidade: 31 linhas/seg
-  ```
-
 ### Baixa Prioridade
 
 - [ ] **Interface Web**: UI para configuração e monitoramento
@@ -52,27 +44,6 @@
 - [ ] **Modo Batch**: Processar múltiplos arquivos
 - [ ] **Exportação de Sucessos**: Arquivo com linhas processadas com sucesso
 - [ ] **Estatísticas Detalhadas**: Tempo médio por requisição, etc.
-
-## 🎨 Arquitetura Melhorada
-
-### Separação em Múltiplos Arquivos
-
-```
-CsvToApi/
-├── Program.cs                    # Entry point
-├── Services/
-│   ├── CsvReaderService.cs      # Leitura CSV
-│   ├── ValidationService.cs     # Validações
-│   ├── ApiClientService.cs      # Chamadas HTTP
-│   └── LoggingService.cs        # Logging
-├── Models/
-│   ├── Configuration.cs         # Classes de config
-│   ├── CsvRecord.cs            # Modelo de dados
-│   └── ProcessResult.cs        # Resultado
-└── Utils/
-    ├── PayloadBuilder.cs       # Construção de payload
-    └── DataTransformer.cs      # Transformações
-```
 
 ## 🧪 Testes Unitários
 

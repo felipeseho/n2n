@@ -164,6 +164,7 @@ public class Program
             var validationService = new ValidationService();
             var loggingService = new LoggingService();
             var checkpointService = new CheckpointService();
+            var metricsService = new MetricsService();
 
             // Carregar configuração do YAML
             var config = configService.LoadConfiguration(configPath);
@@ -180,9 +181,9 @@ public class Program
             // Criar diretórios necessários
             configService.EnsureDirectoriesExist(config);
 
-            // Inicializar ApiClientService com a configuração da API
-            var apiClientService = new ApiClientService(loggingService, config.Api);
-            var processorService = new CsvProcessorService(validationService, loggingService, apiClientService, checkpointService);
+            // Inicializar ApiClientService com a configuração da API e MetricsService
+            var apiClientService = new ApiClientService(loggingService, config.Api, metricsService);
+            var processorService = new CsvProcessorService(validationService, loggingService, apiClientService, checkpointService, metricsService);
 
             if (dryRun)
             {

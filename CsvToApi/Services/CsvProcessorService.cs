@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using CsvHelper;
@@ -15,17 +16,20 @@ public class CsvProcessorService
     private readonly LoggingService _loggingService;
     private readonly ApiClientService _apiClientService;
     private readonly CheckpointService _checkpointService;
+    private readonly MetricsService _metricsService;
 
     public CsvProcessorService(
         ValidationService validationService,
         LoggingService loggingService,
         ApiClientService apiClientService,
-        CheckpointService checkpointService)
+        CheckpointService checkpointService,
+        MetricsService metricsService)
     {
         _validationService = validationService;
         _loggingService = loggingService;
         _apiClientService = apiClientService;
         _checkpointService = checkpointService;
+        _metricsService = metricsService;
     }
 
     /// <summary>
@@ -41,6 +45,10 @@ public class CsvProcessorService
             HasHeaderRecord = true,
             MissingFieldFound = null
         };
+
+        // Contar total de linhas primeiro
+        var totalLines = CountCsvLines(config.File.InputPath);
+        _metricsService.StartProcessing(totalLines);
 
         using var reader = new StreamReader(config.File.InputPath);
         using var csv = new CsvReader(reader, csvConfig);
@@ -88,10 +96,13 @@ public class CsvProcessorService
         if (totalSkipped > 0)
         {
             Console.WriteLine($"⏭️  Puladas {totalSkipped} linhas (iniciando na linha {startLineFromCheckpoint})");
+            _metricsService.RecordSkippedLines(totalSkipped);
         }
 
         var lastCheckpointSave = DateTime.Now;
+        var lastMetricsDisplay = DateTime.Now;
         var checkpointIntervalSeconds = 30; // Salvar checkpoint a cada 30 segundos
+        var metricsDisplayIntervalSeconds = 5; // Atualizar métricas a cada 5 segundos
 
         while (await csv.ReadAsync())
         {
@@ -114,6 +125,7 @@ public class CsvProcessorService
             {
                 await _loggingService.LogError(config.File.LogPath, record, 400, validationError, headers);
                 totalErrors++;
+                _metricsService.RecordValidationError();
                 continue;
             }
 
@@ -122,13 +134,23 @@ public class CsvProcessorService
             // Processar lote quando atingir o tamanho configurado
             if (batch.Count >= config.File.BatchLines)
             {
+                var batchTimer = Stopwatch.StartNew();
                 var errors = await _apiClientService.ProcessBatchAsync(httpClient, batch, config, headers, dryRun);
+                batchTimer.Stop();
+                
+                _metricsService.RecordBatchTime(batchTimer.ElapsedMilliseconds);
+                
                 totalProcessed += batch.Count;
                 totalErrors += errors;
                 totalSuccess += (batch.Count - errors);
                 batch.Clear();
-                
-                Console.WriteLine($"Processadas {totalProcessed} linhas. Sucessos: {totalSuccess}, Erros: {totalErrors}");
+
+                // Exibir atualização de progresso
+                if ((DateTime.Now - lastMetricsDisplay).TotalSeconds >= metricsDisplayIntervalSeconds)
+                {
+                    _metricsService.DisplayProgressUpdate();
+                    lastMetricsDisplay = DateTime.Now;
+                }
 
                 // Salvar checkpoint periodicamente
                 if (!string.IsNullOrWhiteSpace(config.File.CheckpointPath) && 
@@ -148,13 +170,20 @@ public class CsvProcessorService
         // Processar lote restante
         if (batch.Count > 0)
         {
+            var batchTimer = Stopwatch.StartNew();
             var errors = await _apiClientService.ProcessBatchAsync(httpClient, batch, config, headers, dryRun);
+            batchTimer.Stop();
+            
+            _metricsService.RecordBatchTime(batchTimer.ElapsedMilliseconds);
+            
             totalProcessed += batch.Count;
             totalErrors += errors;
             totalSuccess += (batch.Count - errors);
-            
-            Console.WriteLine($"Processadas {totalProcessed} linhas. Sucessos: {totalSuccess}, Erros: {totalErrors}");
         }
+
+        // Finalizar métricas
+        _metricsService.EndProcessing();
+        Console.WriteLine(); // Nova linha após progress update
 
         // Salvar checkpoint final
         if (!string.IsNullOrWhiteSpace(config.File.CheckpointPath))
@@ -166,13 +195,32 @@ public class CsvProcessorService
                 totalSuccess, 
                 totalErrors);
             
-            Console.WriteLine($"\n💾 Checkpoint salvo em: {config.File.CheckpointPath}");
+            Console.WriteLine($"💾 Checkpoint salvo em: {config.File.CheckpointPath}");
         }
 
-        Console.WriteLine($"\n📊 Resumo do Processamento:");
-        Console.WriteLine($"   Total de linhas processadas: {totalProcessed}");
-        Console.WriteLine($"   ✅ Sucessos: {totalSuccess} ({(totalProcessed > 0 ? (totalSuccess * 100.0 / totalProcessed).ToString("F1") : "0")}%)");
-        Console.WriteLine($"   ❌ Erros: {totalErrors} ({(totalProcessed > 0 ? (totalErrors * 100.0 / totalProcessed).ToString("F1") : "0")}%)");
+        // Exibir dashboard final
+        _metricsService.DisplayDashboard();
+    }
+
+    /// <summary>
+    /// Conta o número de linhas no arquivo CSV (excluindo cabeçalho)
+    /// </summary>
+    private int CountCsvLines(string filePath)
+    {
+        try
+        {
+            using var reader = new StreamReader(filePath);
+            int count = 0;
+            while (reader.ReadLine() != null)
+            {
+                count++;
+            }
+            return count - 1; // Excluir cabeçalho
+        }
+        catch
+        {
+            return 0;
+        }
     }
 }
 
