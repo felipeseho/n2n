@@ -42,6 +42,8 @@ public static class DataTransformer
             "reverse" => new string(value.Reverse().ToArray()),
             "base64-encode" => Convert.ToBase64String(Encoding.UTF8.GetBytes(value)),
             "url-encode" => Uri.EscapeDataString(value),
+            _ when transform.StartsWith("date-format:") =>
+                DateFormat(value, transform.Substring("date-format:".Length)),
             _ => value
         };
     }
@@ -63,6 +65,15 @@ public static class DataTransformer
         if (string.IsNullOrEmpty(value)) return value;
         var textInfo = new CultureInfo("pt-BR", false).TextInfo;
         return textInfo.ToTitleCase(value.ToLower());
+    }
+
+    private static string DateFormat(string value, string format)
+    {
+        if (DateTime.TryParse(value, out var date))
+        {
+            return date.ToString(format);
+        }
+        return value;
     }
 
     /// <summary>
