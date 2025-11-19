@@ -5,6 +5,22 @@
 dotnet run -- --help
 ```
 
+## Tabela de Referência Rápida
+
+| Argumento | Forma Curta | Descrição | Exemplo |
+|-----------|-------------|-----------|---------|
+| `--config` | `-c` | Arquivo de configuração YAML | `--config config.yaml` |
+| `--input` | `-i` | Arquivo CSV de entrada | `--input data/vendas.csv` |
+| `--batch-lines` | `-b` | Linhas por lote | `--batch-lines 500` |
+| `--start-line` | `-s` | Linha inicial | `--start-line 100` |
+| `--max-lines` | `-n` | Máximo de linhas a processar | `--max-lines 1000` |
+| `--log-dir` | `-l` | Diretório de logs | `--log-dir logs/prod` |
+| `--delimiter` | `-d` | Delimitador do CSV | `--delimiter ";"` |
+| `--execution-id` | `--exec-id` | UUID para continuar execução | `--exec-id abc-123...` |
+| `--endpoint-name` | | Endpoint configurado a usar | `--endpoint-name producao` |
+| `--verbose` | `-v` | Logs detalhados | `--verbose` |
+| `--dry-run` | `--test` | Teste sem requisições | `--dry-run` |
+
 ## Opções Principais
 
 ### Arquivo de Configuração
@@ -48,6 +64,8 @@ dotnet run -- -n 500
 dotnet run -- -i data/vendas.csv -n 100 -v
 
 # Combinar com linha inicial para processar um intervalo específico
+# Exemplo: processar linhas 101 a 200
+dotnet run -- -s 101 -n 100 -v
 ```
 
 ### Execution ID (Controle de Checkpoint)
@@ -66,43 +84,28 @@ dotnet run -- --execution-id 6869cdf3-5fb0-4178-966d-9a21015ffb4d --max-lines 10
 # - logs/process_{uuid}.log
 # - checkpoints/checkpoint_{uuid}.json
 ```
-# Exemplo: processar linhas 101 a 200
-dotnet run -- -s 101 -n 100 -v
+
+### Selecionar Endpoint Específico
+```bash
+# Usar endpoint nomeado configurado no YAML
+dotnet run -- --endpoint-name webhook1
+dotnet run -- --endpoint-name producao
+
+# Sobrescreve coluna CSV e defaultEndpoint
+dotnet run -- --endpoint-name teste --verbose
 ```
 
-### Configurar Endpoint da API
+### Modo Dry-Run (Teste sem Requisições)
 ```bash
-# Apontar para API diferente
-dotnet run -- --endpoint https://api.producao.com/upload
-dotnet run -- -e http://localhost:3000/api/data
-```
+# Validar configuração e dados sem fazer chamadas HTTP
+dotnet run -- --dry-run
+dotnet run -- --test
 
-### Autenticação
-```bash
-# Fornecer token de autenticação
-dotnet run -- --auth-token "Bearer abc123xyz"
-dotnet run -- -a "Bearer token-producao"
-```
+# Combinar com verbose para ver detalhes
+dotnet run -- --dry-run --verbose
 
-### Método HTTP
-```bash
-# Usar PUT em vez de POST
-dotnet run -- --method PUT
-dotnet run -- -m POST
-```
-
-### Timeout
-```bash
-# Aumentar timeout para 120 segundos
-dotnet run -- --timeout 120
-dotnet run -- -t 60
-```
-
-### Logs Detalhados
-```bash
-# Ativar modo verboso
-dotnet run -- --verbose
-dotnet run -- -v
+# Testar com subset de dados
+dotnet run -- --dry-run --max-lines 100 -v
 ```
 
 ### Delimitador CSV
@@ -112,22 +115,23 @@ dotnet run -- --delimiter ";"
 dotnet run -- -d "|"
 ```
 
-### Arquivo de Log
+### Diretório de Logs
 ```bash
-# Especificar arquivo de log diferente
-dotnet run -- --log-path logs/erros-producao.log
-dotnet run -- -l logs/debug.log
+# Especificar diretório de logs diferente
+dotnet run -- --log-dir logs/producao
+dotnet run -- -l logs/teste
 ```
 
 ## Exemplos Combinados
 
-### Teste em Desenvolvimento
+### Teste em Desenvolvimento com Dry-Run
 ```bash
 dotnet run -- \
   -i data/test.csv \
-  -e http://localhost:3000/api/users \
+  --endpoint-name desenvolvimento \
   -b 10 \
   -n 50 \
+  --dry-run \
   -v
 ```
 
@@ -136,11 +140,8 @@ dotnet run -- \
 dotnet run -- \
   --config config-prod.yaml \
   --input data/vendas-diarias.csv \
-  --endpoint https://api.empresa.com/vendas \
-  --auth-token "Bearer prod-token-xyz123" \
+  --endpoint-name producao \
   --batch-lines 1000 \
-  --timeout 90 \
-  --method POST \
   --verbose
 ```
 
@@ -148,8 +149,9 @@ dotnet run -- \
 ```bash
 dotnet run -- \
   -i data/sample.csv \
-  -e "https://webhook.site/sua-url-unica" \
+  --endpoint-name webhook1 \
   -b 5 \
+  --dry-run \
   -v
 ```
 
@@ -159,18 +161,34 @@ dotnet run -- \
   --config config.yaml \
   --input data/novos-usuarios.csv \
   --batch-lines 100 \
-  --log-path logs/usuarios-$(date +%Y%m%d).log \
+  --log-dir logs/usuarios \
   --verbose
 ```
 
 ### Retomar Processamento Após Falha
 ```bash
-# Se o processamento falhou na linha 500, retome a partir dela
+# Se o processamento falhou, use o mesmo execution-id
+dotnet run -- \
+  --execution-id abc-123-def-456 \
+  --verbose
+
+# Ou comece de uma linha específica
 dotnet run -- \
   --input data/vendas-grandes.csv \
   --start-line 501 \
   --batch-lines 100 \
   --verbose
+```
+
+### Processar Intervalo Específico de Linhas
+```bash
+# Processar linhas 1001 a 2000
+dotnet run -- \
+  -i data/grande-arquivo.csv \
+  -s 1001 \
+  -n 1000 \
+  --endpoint-name producao \
+  -v
 ```
 
 ## Prioridade das Configurações

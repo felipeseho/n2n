@@ -1,5 +1,7 @@
 # CSV to API - Processador de Arquivos CSV
 
+**Versão**: 0.7.0 | [Changelog](CHANGELOG.md)
+
 Aplicação .NET 10 que processa arquivos CSV em lotes e envia os dados para uma API REST.
 
 ## ✨ Interface Visual Moderna com Spectre.Console
@@ -20,14 +22,19 @@ Veja detalhes completos em [SPECTRE_CONSOLE.md](SPECTRE_CONSOLE.md)
 - ✅ Leitura de arquivos CSV grandes em lotes configuráveis
 - ✅ Validação de dados com regex e formatos de data
 - ✅ **Filtros de dados para processar apenas linhas específicas**
+- ✅ **Transformações de dados (20+ transformações disponíveis)**
+- ✅ **Múltiplos endpoints nomeados com roteamento dinâmico**
 - ✅ Processamento paralelo para alta performance
 - ✅ Chamadas HTTP (POST/PUT) para API REST
 - ✅ Log de erros com informações detalhadas (linha, HTTP code, mensagem)
+- ✅ **Sistema de checkpoints com UUID por execução**
+- ✅ **Modo dry-run para testes sem requisições reais**
 - ✅ Suporte a atributos aninhados no payload da API (ex: `address.street`)
 - ✅ Configuração via arquivo YAML
-- ✅ Autenticação Bearer Token
+- ✅ Autenticação Bearer Token e headers customizados
 - ✅ **Argumentos de linha de comando para sobrescrever configurações**
-- ✅ **Interface visual moderna e interativa**
+- ✅ **Interface visual moderna e interativa com Spectre.Console**
+- ✅ Valores fixos e dinâmicos no payload da API
 
 ## Requisitos
 
@@ -98,11 +105,12 @@ Todos os argumentos são opcionais e sobrescrevem as configurações do arquivo 
 | `--batch-lines` | `-b` | Número de linhas por lote | `--batch-lines 500` |
 | `--start-line` | `-s` | Linha inicial para começar o processamento | `--start-line 100` |
 | `--max-lines` | `-n` | Número máximo de linhas a processar | `--max-lines 1000` |
-| `--log-path` | `-l` | Caminho do arquivo de log | `--log-path logs/erros.log` |
+| `--log-dir` | `-l` | Diretório onde os logs serão salvos | `--log-dir logs` |
 | `--delimiter` | `-d` | Delimitador do CSV | `--delimiter ";"` |
+| `--execution-id` | `--exec-id` | UUID da execução para continuar checkpoint | `--exec-id abc-123...` |
 | `--endpoint-name` | | Nome do endpoint configurado a ser usado | `--endpoint-name webhook1` |
 | `--verbose` | `-v` | Exibir logs detalhados | `--verbose` |
-| `--dry-run` | | Modo de teste: não faz requisições reais | `--dry-run` |
+| `--dry-run` | `--test` | Modo de teste: não faz requisições reais | `--dry-run` |
 
 ### Exemplos Práticos
 
@@ -139,6 +147,26 @@ dotnet run -- -i data/vendas.csv -n 100 -v
 
 # Processar um intervalo específico (ex: linhas 101-200)
 dotnet run -- -i data/vendas.csv -s 101 -n 100 -v
+```
+
+**Modo Dry-Run (teste sem requisições reais):**
+```bash
+# Validar configuração e dados sem fazer chamadas HTTP
+dotnet run -- --dry-run -v
+dotnet run -- --test -v
+```
+
+**Execution ID e Checkpoints:**
+```bash
+# Nova execução (gera UUID automaticamente)
+dotnet run
+
+# Continuar execução existente usando o UUID
+dotnet run -- --execution-id 6869cdf3-5fb0-4178-966d-9a21015ffb4d -v
+
+# Cada execução tem seus próprios arquivos:
+# - logs/process_{uuid}.log
+# - checkpoints/checkpoint_{uuid}.json
 ```
 
 ## Configuração (config.yaml)
@@ -185,12 +213,18 @@ endpoints:
     mapping:                              # Mapeamento CSV -> API
       - attribute: "name"
         csvColumn: "Name"                 # Valor vem da coluna CSV
+        transform: "uppercase"            # Opcional: transformação de dados
       - attribute: "email"
         csvColumn: "Email"
+        transform: "lowercase"            # Converter para minúsculas
       - attribute: "address.street"       # Suporta atributos aninhados
         csvColumn: "Street"
+        transform: "title-case"           # Primeira letra maiúscula
       - attribute: "birthdate"
         csvColumn: "Birthdate"
+      - attribute: "cpf"
+        csvColumn: "CPF"
+        transform: "format-cpf"           # Formata como 000.000.000-00
       # Parâmetros com valores fixos (não vêm do CSV)
       - attribute: "source"
         fixedValue: "csv-import"          # Valor fixo para todos os registros
@@ -445,7 +479,57 @@ file:
 - **Contains**: Valor contém o texto especificado
 - **NotContains**: Valor não contém o texto especificado
 
-**Documentação completa**: Veja [FILTROS.md](FILTROS.md) para exemplos detalhados e casos de uso.
+**Documentação completa**: Veja [data/README-FILTROS.md](data/README-FILTROS.md) para exemplos detalhados e casos de uso.
+
+## Transformações de Dados
+
+A aplicação oferece 20+ transformações que podem ser aplicadas aos dados antes do envio para a API.
+
+### Transformações Disponíveis
+
+**Texto:**
+- `uppercase` - Converte para MAIÚSCULAS
+- `lowercase` - Converte para minúsculas
+- `capitalize` - Primeira letra maiúscula
+- `title-case` - Primeira Letra De Cada Palavra
+- `trim` - Remove espaços nas extremidades
+
+**Limpeza:**
+- `remove-spaces` - Remove todos os espaços
+- `remove-accents` - Remove acentos
+- `remove-non-numeric` - Mantém apenas números
+- `remove-non-alphanumeric` - Remove caracteres especiais
+
+**Formatações Brasileiras:**
+- `format-cpf` - Formata como 000.000.000-00
+- `format-cnpj` - Formata como 00.000.000/0000-00
+- `format-phone-br` - Formata telefone brasileiro
+- `format-cep` - Formata como 00000-000
+
+**Outras:**
+- `slugify` - Converte para URL-friendly
+- `base64-encode` - Codifica em Base64
+- `url-encode` - Codifica para URL
+- `date-format:FORMATO` - Reformata datas
+
+### Exemplo de Uso
+
+```yaml
+endpoints:
+  - name: "api-usuarios"
+    mapping:
+      - attribute: "nome"
+        csvColumn: "Nome"
+        transform: "title-case"
+      - attribute: "email"
+        csvColumn: "Email"
+        transform: "lowercase"
+      - attribute: "cpf"
+        csvColumn: "CPF"
+        transform: "format-cpf"
+```
+
+**Documentação completa**: Veja [TRANSFORMACOES.md](TRANSFORMACOES.md) para todas as transformações e exemplos.
 
 ## Tratamento de Erros
 
@@ -459,7 +543,8 @@ A aplicação registra erros em três situações:
 
 - **YamlDotNet**: Leitura de arquivos YAML
 - **CsvHelper**: Processamento eficiente de CSV
-- **System.CommandLine**: Parsing robusto de argumentos CLI
+- **Spectre.Console**: Interface visual moderna e interativa
+- **Spectre.Console.Cli**: Parsing robusto de argumentos CLI
 
 ## Licença
 

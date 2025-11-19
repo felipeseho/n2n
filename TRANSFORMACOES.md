@@ -6,22 +6,25 @@ A funcionalidade de **Transformações de Dados** permite modificar valores de c
 
 ## Como Usar
 
-Adicione a propriedade `transform` no mapeamento da API no arquivo `config.yaml`:
+Adicione a propriedade `transform` no mapeamento do endpoint no arquivo `config.yaml`:
 
 ```yaml
-api:
-  mapping:
-    - attribute: "name"
-      csvColumn: "Name"
-      transform: "uppercase"
-    
-    - attribute: "email"
-      csvColumn: "Email"
-      transform: "lowercase"
-    
-    - attribute: "address.street"
-      csvColumn: "Street"
-      transform: "title-case"
+endpoints:
+  - name: "api-principal"
+    endpointUrl: "https://api.exemplo.com/upload"
+    method: "POST"
+    mapping:
+      - attribute: "name"
+        csvColumn: "Name"
+        transform: "uppercase"
+      
+      - attribute: "email"
+        csvColumn: "Email"
+        transform: "lowercase"
+      
+      - attribute: "address.street"
+        csvColumn: "Street"
+        transform: "title-case"
 ```
 
 ## Transformações Disponíveis
@@ -145,26 +148,29 @@ api:
 
 ## Exemplos Práticos
 
-### Exemplo 1: E-commerce - Produtos
+### Exemplo 1: E-commerce - Normalização de Produtos
 
 ```yaml
-api:
-  mapping:
-    - attribute: "sku"
-      csvColumn: "Código"
-      transform: "uppercase"
-    
-    - attribute: "name"
-      csvColumn: "Nome do Produto"
-      transform: "title-case"
-    
-    - attribute: "slug"
-      csvColumn: "Nome do Produto"
-      transform: "slugify"
-    
-    - attribute: "description"
-      csvColumn: "Descrição"
-      transform: "trim"
+endpoints:
+  - name: "produtos"
+    endpointUrl: "https://api.loja.com/produtos"
+    method: "POST"
+    mapping:
+      - attribute: "title"
+        csvColumn: "Nome Produto"
+        transform: "title-case"
+      
+      - attribute: "sku"
+        csvColumn: "SKU"
+        transform: "uppercase"
+      
+      - attribute: "slug"
+        csvColumn: "Nome Produto"
+        transform: "slugify"
+      
+      - attribute: "description"
+        csvColumn: "Descricao"
+        transform: "trim"
 ```
 
 **CSV:**
@@ -183,30 +189,33 @@ abc123,camiseta básica branca,  Camiseta 100% algodão
 }
 ```
 
-### Exemplo 2: CRM - Cadastro de Clientes
+### Exemplo 2: CRM - Normalização de Clientes
 
 ```yaml
-api:
-  mapping:
-    - attribute: "name"
-      csvColumn: "Nome"
-      transform: "title-case"
-    
-    - attribute: "email"
-      csvColumn: "Email"
-      transform: "lowercase"
-    
-    - attribute: "cpf"
-      csvColumn: "CPF"
-      transform: "format-cpf"
-    
-    - attribute: "phone"
-      csvColumn: "Telefone"
-      transform: "format-phone-br"
-    
-    - attribute: "zipcode"
-      csvColumn: "CEP"
-      transform: "format-cep"
+endpoints:
+  - name: "clientes"
+    endpointUrl: "https://api.crm.com/clientes"
+    method: "POST"
+    mapping:
+      - attribute: "name"
+        csvColumn: "Nome"
+        transform: "title-case"
+      
+      - attribute: "email"
+        csvColumn: "Email"
+        transform: "lowercase"
+      
+      - attribute: "cpf"
+        csvColumn: "CPF"
+        transform: "format-cpf"
+      
+      - attribute: "phone"
+        csvColumn: "Telefone"
+        transform: "format-phone-br"
+      
+      - attribute: "zipcode"
+        csvColumn: "CEP"
+        transform: "format-cep"
 ```
 
 **CSV:**
@@ -229,23 +238,26 @@ joão silva,JOAO@EMAIL.COM,12345678900,11987654321,01310100
 ### Exemplo 3: RH - Importação de Funcionários
 
 ```yaml
-api:
-  mapping:
-    - attribute: "fullName"
-      csvColumn: "Nome Completo"
-      transform: "title-case"
-    
-    - attribute: "department"
-      csvColumn: "Departamento"
-      transform: "uppercase"
-    
-    - attribute: "email"
-      csvColumn: "Email Corporativo"
-      transform: "lowercase"
-    
-    - attribute: "badge"
-      csvColumn: "Matrícula"
-      transform: "remove-non-numeric"
+endpoints:
+  - name: "funcionarios"
+    endpointUrl: "https://api.rh.com/funcionarios"
+    method: "POST"
+    mapping:
+      - attribute: "fullName"
+        csvColumn: "Nome Completo"
+        transform: "title-case"
+      
+      - attribute: "department"
+        csvColumn: "Departamento"
+        transform: "uppercase"
+      
+      - attribute: "email"
+        csvColumn: "Email Corporativo"
+        transform: "lowercase"
+      
+      - attribute: "badge"
+        csvColumn: "Matrícula"
+        transform: "remove-non-numeric"
 ```
 
 **CSV:**
@@ -275,11 +287,12 @@ file:
       type: "string"
       regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
 
-api:
-  mapping:
-    - attribute: "email"
-      csvColumn: "Email"
-      transform: "lowercase"  # Será enviado em minúsculas
+endpoints:
+  - name: "api-principal"
+    mapping:
+      - attribute: "email"
+        csvColumn: "Email"
+        transform: "lowercase"  # Será enviado em minúsculas
 ```
 
 ## Observações Importantes

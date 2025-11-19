@@ -253,11 +253,9 @@ dotnet run -- --input data/export.csv --delimiter ";" --verbose
 
 ### Retomar processamento após falha
 ```bash
-# Se o processamento falhou ou foi interrompido na linha 2500
+# Se o processamento falhou, use o mesmo execution-id
 dotnet run -- \
-  --input data/vendas-grandes.csv \
-  --start-line 2501 \
-  --endpoint-name producao \
+  --execution-id abc-123-def-456 \
   --verbose
 ```
 
@@ -269,78 +267,6 @@ dotnet run -- \
   --max-lines 100 \
   --endpoint-name teste \
   --verbose
-```
-
-### Processar arquivo diferente sem alterar config.yaml
-```bash
-dotnet run -- --input data/vendas-janeiro.csv
-```
-
-### Usar endpoint de produção temporariamente
-```bash
-dotnet run -- --endpoint https://api.producao.com/vendas --verbose
-```
-
-### Processar com lotes maiores e timeout customizado
-```bash
-dotnet run -- --batch-lines 1000 --timeout 120 --verbose
-```
-
-### Processar arquivo com delimitador ponto-e-vírgula
-```bash
-dotnet run -- --input data/export.csv --delimiter ";" --verbose
-```
-
-### Usar configuração de teste com autenticação específica
-```bash
-dotnet run -- \
-  --config config-test.yaml \
-  --input data/test-data.csv \
-  --endpoint https://test-api.com/upload \
-  --auth-token "Bearer test-token-123" \
-  --batch-lines 10 \
-  --verbose
-```
-
-### Processar arquivo CSV para ambiente de desenvolvimento
-```bash
-dotnet run -- \
-  -i data/clientes.csv \
-  -e http://localhost:3000/api/clientes \
-  -b 50 \
-  -v
-```
-
-### Teste rápido com webhook.site
-```bash
-dotnet run -- \
-  --input data/sample.csv \
-  --endpoint "https://webhook.site/sua-url-aqui" \
-  --batch-lines 5 \
-  --verbose
-```
-
-### Retomar processamento após falha
-```bash
-# Se o processamento falhou ou foi interrompido na linha 2500
-dotnet run -- \
-  --input data/vendas-grandes.csv \
-  --start-line 2501 \
-  --endpoint https://api.producao.com/vendas \
-  --auth-token "Bearer token-prod" \
-  --verbose
-```
-
-### Processar apenas um subconjunto de linhas para teste
-```bash
-# Processar apenas linhas 100 a 200 (aproximadamente)
-dotnet run -- \
-  --input data/clientes.csv \
-  --start-line 100 \
-  --batch-lines 10 \
-  --endpoint https://webhook.site/test \
-  --verbose
-# Interrompa após processar linhas suficientes (Ctrl+C)
 ```
 
 ## Exemplo 4: Usando Valores Fixos
@@ -596,10 +522,7 @@ Imagine que você tem um CSV com dados de múltiplas campanhas, mas quer process
 file:
     inputPath: "data/campanhas.csv"
     batchLines: 100
-file:
-    inputPath: "data/campanhas.csv"
-    batchLines: 100
-    columns:
+    mapping:
         - column: "nome"
           type: "string"
         
@@ -634,7 +557,7 @@ endpoints:
 
 ```yaml
 file:
-    columns:
+    mapping:
         - column: "email"
           type: "string"
           # Filtro: excluir emails de teste
@@ -659,9 +582,7 @@ file:
 ```yaml
 file:
     inputPath: "data/clientes.csv"
-file:
-    inputPath: "data/clientes.csv"
-    columns:
+    mapping:
         - column: "nome"
           type: "string"
         
@@ -704,7 +625,7 @@ Se os valores fazem parte de um padrão:
 
 ```yaml
 file:
-    columns:
+    mapping:
         # Processa campanhas que contenham "promo" (ex: promo2024, promo_natal, etc)
         - column: "campanha"
           type: "string"
@@ -718,7 +639,7 @@ file:
 
 ```yaml
 file:
-    columns:
+    mapping:
         # Processar apenas linhas com email preenchido
         - column: "email"
           type: "string"
@@ -760,8 +681,255 @@ file:
    dotnet run -- --dry-run
    ```
 
-Veja a documentação completa em [FILTROS.md](FILTROS.md).
+Veja a documentação completa em [data/README-FILTROS.md](data/README-FILTROS.md).
 
+## Exemplo 6: Usando Transformações de Dados
 
+### Cenário: Normalização de dados antes do envio
 
+Muitas vezes os dados do CSV precisam ser transformados antes de serem enviados para a API. A aplicação oferece 20+ transformações prontas.
+
+### Arquivo CSV (clientes.csv)
+```csv
+Nome,Email,CPF,Telefone,CEP
+JOÃO SILVA,JOAO.SILVA@EMAIL.COM,12345678900,(11) 99999-9999,12345678
+maria santos,Maria@Email.COM,98765432100,11-88888-8888,98765-432
+Pedro Costa,pedro@EXEMPLO.com,11122233344,1177777777,01234567
+```
+
+### Configuração com Transformações
+
+```yaml
+endpoints:
+  - name: "clientes_api"
+    endpointUrl: "https://api.exemplo.com/clientes"
+    headers:
+      Authorization: "Bearer token123"
+    method: "POST"
+    mapping:
+      # Transformar nome para Title Case (Primeira Letra Maiúscula)
+      - attribute: "nome"
+        csvColumn: "Nome"
+        transform: "title-case"
+      
+      # Transformar email para minúsculas
+      - attribute: "email"
+        csvColumn: "Email"
+        transform: "lowercase"
+      
+      # Formatar CPF (adiciona pontos e traço)
+      - attribute: "cpf"
+        csvColumn: "CPF"
+        transform: "format-cpf"
+      
+      # Remover caracteres não-numéricos do telefone
+      - attribute: "telefone"
+        csvColumn: "Telefone"
+        transform: "remove-non-numeric"
+      
+      # Formatar CEP
+      - attribute: "cep"
+        csvColumn: "CEP"
+        transform: "format-cep"
+```
+
+### Payloads Gerados
+
+**Linha 1 (JOÃO SILVA):**
+```json
+{
+  "nome": "João Silva",           // title-case
+  "email": "joao.silva@email.com", // lowercase
+  "cpf": "123.456.789-00",         // format-cpf
+  "telefone": "11999999999",       // remove-non-numeric
+  "cep": "12345-678"               // format-cep
+}
+```
+
+**Linha 2 (maria santos):**
+```json
+{
+  "nome": "Maria Santos",          // title-case
+  "email": "maria@email.com",      // lowercase
+  "cpf": "987.654.321-00",         // format-cpf
+  "telefone": "11888888888",       // remove-non-numeric
+  "cep": "98765-432"               // format-cep
+}
+```
+
+### Mais Exemplos de Transformações
+
+#### Limpeza de Dados
+```yaml
+mapping:
+  # Remover espaços extras
+  - attribute: "codigo"
+    csvColumn: "Codigo"
+    transform: "trim"
+  
+  # Remover acentos
+  - attribute: "slug"
+    csvColumn: "Nome"
+    transform: "slugify"
+  
+  # MAIÚSCULAS
+  - attribute: "siglaEstado"
+    csvColumn: "Estado"
+    transform: "uppercase"
+```
+
+#### Formatações Brasileiras
+```yaml
+mapping:
+  # CPF: 000.000.000-00
+  - attribute: "cpf"
+    csvColumn: "CPF"
+    transform: "format-cpf"
+  
+  # CNPJ: 00.000.000/0000-00
+  - attribute: "cnpj"
+    csvColumn: "CNPJ"
+    transform: "format-cnpj"
+  
+  # Telefone: (00) 00000-0000
+  - attribute: "telefone"
+    csvColumn: "Telefone"
+    transform: "format-phone-br"
+  
+  # CEP: 00000-000
+  - attribute: "cep"
+    csvColumn: "CEP"
+    transform: "format-cep"
+```
+
+#### Transformações Especiais
+```yaml
+mapping:
+  # Codificar em Base64
+  - attribute: "documentoBase64"
+    csvColumn: "Documento"
+    transform: "base64-encode"
+  
+  # URL encode
+  - attribute: "parametro"
+    csvColumn: "Parametro"
+    transform: "url-encode"
+  
+  # Reverter string
+  - attribute: "reverso"
+    csvColumn: "Texto"
+    transform: "reverse"
+  
+  # Formatar data
+  - attribute: "dataNascimento"
+    csvColumn: "DataNasc"
+    transform: "date-format:DD/MM/YYYY"
+```
+
+### Transformações Disponíveis
+
+**Texto:**
+- `uppercase` - MAIÚSCULAS
+- `lowercase` - minúsculas
+- `capitalize` - Primeira letra maiúscula
+- `title-case` - Primeira Letra De Cada Palavra
+- `trim` - Remove espaços nas extremidades
+
+**Limpeza:**
+- `remove-spaces` - Remove todos os espaços
+- `remove-all-spaces` - Remove todos os espaços em branco
+- `remove-accents` - Remove acentos
+- `remove-non-numeric` - Mantém apenas números
+- `remove-non-alphanumeric` - Remove caracteres especiais
+
+**Formatações Brasileiras:**
+- `format-cpf` - 000.000.000-00
+- `format-cnpj` - 00.000.000/0000-00
+- `format-phone-br` - (00) 00000-0000
+- `format-cep` - 00000-000
+
+**Outras:**
+- `slugify` - texto-url-friendly
+- `base64-encode` - Codifica em Base64
+- `url-encode` - Codifica para URL
+- `reverse` - Inverte a string
+- `date-format:FORMATO` - Reformata datas
+
+Veja a documentação completa em [TRANSFORMACOES.md](TRANSFORMACOES.md).
+
+## Exemplo 7: Dry-Run e Execution ID
+
+### Dry-Run: Teste sem Requisições Reais
+
+Use o modo dry-run para validar configurações e dados sem fazer chamadas HTTP reais:
+
+```bash
+# Validar configuração completa
+dotnet run -- --dry-run --verbose
+
+# Testar com subset de dados
+dotnet run -- --dry-run --max-lines 100 -v
+
+# Testar endpoint específico
+dotnet run -- --dry-run --endpoint-name producao -v
+```
+
+**Vantagens:**
+- Valida arquivo CSV e configuração YAML
+- Testa transformações e filtros
+- Não consome créditos da API
+- Identifica problemas antes do processamento real
+
+### Execution ID: Controle de Checkpoints
+
+Cada execução tem um UUID único que identifica seus logs e checkpoints:
+
+```bash
+# Nova execução (gera UUID automaticamente)
+dotnet run
+
+# Exemplo de saída:
+# 🆔 Execution ID: 6869cdf3-5fb0-4178-966d-9a21015ffb4d
+# 📁 Log: logs/process_6869cdf3-5fb0-4178-966d-9a21015ffb4d.log
+# 💾 Checkpoint: checkpoints/checkpoint_6869cdf3-5fb0-4178-966d-9a21015ffb4d.json
+```
+
+#### Continuar Execução Existente
+
+Se o processamento foi interrompido, continue de onde parou:
+
+```bash
+# Usar o mesmo execution-id
+dotnet run -- --execution-id 6869cdf3-5fb0-4178-966d-9a21015ffb4d -v
+```
+
+#### Processar Mais Linhas na Mesma Execução
+
+```bash
+# Processar mais 1000 linhas na execução existente
+dotnet run -- \
+  --execution-id 6869cdf3-5fb0-4178-966d-9a21015ffb4d \
+  --max-lines 1000 \
+  -v
+```
+
+#### Estrutura de Arquivos por Execução
+
+```
+logs/
+  ├── process_6869cdf3-5fb0-4178-966d-9a21015ffb4d.log
+  ├── process_abc-123-def-456.log
+  └── process_xyz-789-ghi-012.log
+
+checkpoints/
+  ├── checkpoint_6869cdf3-5fb0-4178-966d-9a21015ffb4d.json
+  ├── checkpoint_abc-123-def-456.json
+  └── checkpoint_xyz-789-ghi-012.json
+```
+
+**Vantagens:**
+- Rastreabilidade completa de cada processamento
+- Múltiplas execuções do mesmo arquivo sem conflito
+- Fácil retomada após falhas
+- Histórico organizado
 

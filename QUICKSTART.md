@@ -51,16 +51,21 @@ Sobrescreva configurações sem editar arquivos:
 # Teste rápido
 dotnet run -- --input data/input.csv --batch-lines 10 --verbose
 
+# Modo dry-run (teste sem requisições reais)
+dotnet run -- --dry-run --verbose
+
 # Endpoint customizado
-dotnet run -- --endpoint https://api.exemplo.com/upload --verbose
+dotnet run -- --endpoint-name webhook1 --verbose
 
 # Múltiplas configurações
 dotnet run -- \
   --input data/vendas.csv \
-  --endpoint https://api.com/vendas \
+  --endpoint-name webhook1 \
   --batch-lines 500 \
-  --timeout 60 \
   --verbose
+
+# Continuar de um checkpoint existente
+dotnet run -- --execution-id abc-123-def-456 --verbose
 ```
 
 Ver todas as opções:
@@ -113,8 +118,9 @@ Crie `config.yaml`:
 file:
     inputPath: "data/meu-arquivo.csv"
     batchLines: 100
-    logPath: "logs/errors.log"
+    logDirectory: "logs"
     csvDelimiter: ","
+    checkpointDirectory: "checkpoints"
     mapping: []
 
 endpoints:
@@ -127,8 +133,10 @@ endpoints:
     mapping:
       - attribute: "name"
         csvColumn: "Name"
+        transform: "title-case"    # Opcional: transformar dados
       - attribute: "email"
         csvColumn: "Email"
+        transform: "lowercase"     # Converter para minúsculas
       - attribute: "phone"
         csvColumn: "Phone"
 ```
@@ -169,10 +177,19 @@ dotnet publish -c Release -r osx-arm64 --self-contained
 
 ```bash
 # Ver progresso em tempo real
-dotnet run | tee output.log
+dotnet run -- --verbose
+
+# Teste sem requisições reais (dry-run)
+dotnet run -- --dry-run --verbose
 
 # Executar com configuração específica
-dotnet run -- minha-config.yaml
+dotnet run -- --config minha-config.yaml
+
+# Processar apenas primeiras 100 linhas
+dotnet run -- --max-lines 100 --verbose
+
+# Usar endpoint específico
+dotnet run -- --endpoint-name producao --verbose
 
 # Build release
 dotnet build -c Release
@@ -210,15 +227,18 @@ dotnet build
 
 1. ✅ **Teste básico funcionando** → Leia [README.md](README.md)
 2. ✅ **Entender validações** → Leia [EXEMPLOS.md](EXEMPLOS.md)
-3. ✅ **Customizar** → Ajuste `config.yaml`
-4. ✅ **Produção** → Use `build.sh`
+3. ✅ **Usar transformações** → Leia [TRANSFORMACOES.md](TRANSFORMACOES.md)
+4. ✅ **Configurar filtros** → Leia [data/README-FILTROS.md](data/README-FILTROS.md)
+5. ✅ **Argumentos CLI** → Leia [ARGUMENTOS.md](ARGUMENTOS.md)
+6. ✅ **Customizar** → Ajuste `config.yaml`
 
 ## Suporte
 
 - **Documentação Completa**: [README.md](README.md)
 - **Exemplos de Uso**: [EXEMPLOS.md](EXEMPLOS.md)
-- **Melhorias Futuras**: [ROADMAP.md](ROADMAP.md)
-- **Resumo Técnico**: [RESUMO.md](RESUMO.md)
+- **Transformações**: [TRANSFORMACOES.md](TRANSFORMACOES.md)
+- **Argumentos CLI**: [ARGUMENTOS.md](ARGUMENTOS.md)
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
