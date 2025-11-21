@@ -2,7 +2,9 @@
 
 ## Visão Geral
 
-A funcionalidade de **Transformações de Dados** permite modificar valores de colunas CSV antes de enviá-los para a API. Você pode aplicar transformações como converter para maiúsculas, minúsculas, remover espaços, formatar CPF/CNPJ, e muito mais.
+A funcionalidade de **Transformações de Dados** permite modificar valores de colunas CSV antes de enviá-los para a API.
+Você pode aplicar transformações como converter para maiúsculas, minúsculas, remover espaços, formatar CPF/CNPJ, e muito
+mais.
 
 ## Como Usar
 
@@ -174,12 +176,14 @@ endpoints:
 ```
 
 **CSV:**
+
 ```
 Código,Nome do Produto,Descrição
 abc123,camiseta básica branca,  Camiseta 100% algodão  
 ```
 
 **Payload enviado:**
+
 ```json
 {
   "sku": "ABC123",
@@ -219,12 +223,14 @@ endpoints:
 ```
 
 **CSV:**
+
 ```
 Nome,Email,CPF,Telefone,CEP
 joão silva,JOAO@EMAIL.COM,12345678900,11987654321,01310100
 ```
 
 **Payload enviado:**
+
 ```json
 {
   "name": "João Silva",
@@ -261,12 +267,14 @@ endpoints:
 ```
 
 **CSV:**
+
 ```
 Nome Completo,Departamento,Email Corporativo,Matrícula
 maria josé santos,tecnologia,MARIA.SANTOS@EMPRESA.COM,EMP-001234
 ```
 
 **Payload enviado:**
+
 ```json
 {
   "fullName": "Maria José Santos",
@@ -278,7 +286,8 @@ maria josé santos,tecnologia,MARIA.SANTOS@EMPRESA.COM,EMP-001234
 
 ## Combinando Transformações com Validações
 
-Você pode usar transformações junto com validações. A transformação é aplicada **antes** do envio para a API, mas as validações continuam sendo feitas com o valor original do CSV:
+Você pode usar transformações junto com validações. A transformação é aplicada **antes** do envio para a API, mas as
+validações continuam sendo feitas com o valor original do CSV:
 
 ```yaml
 file:
@@ -318,7 +327,8 @@ return transform.ToLower() switch
 
 ## Performance
 
-As transformações são aplicadas durante o processamento de cada linha, antes do envio para a API. O impacto na performance é mínimo, mas considere:
+As transformações são aplicadas durante o processamento de cada linha, antes do envio para a API. O impacto na
+performance é mínimo, mas considere:
 
 - Transformações simples (uppercase, lowercase, trim): < 1ms por registro
 - Formatações complexas (regex, CPF/CNPJ): 1-5ms por registro

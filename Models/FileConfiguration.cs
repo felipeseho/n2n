@@ -1,7 +1,7 @@
-namespace CsvToApi.Models;
+namespace n2n.Models;
 
 /// <summary>
-/// Configuração de arquivo CSV
+///     Configuração de arquivo CSV
 /// </summary>
 public class FileConfiguration
 {
@@ -14,4 +14,3 @@ public class FileConfiguration
     public string CheckpointDirectory { get; set; } = "checkpoints";
     public List<ColumnMapping> Columns { get; set; } = new();
 }
-

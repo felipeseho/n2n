@@ -1,29 +1,31 @@
 # Guia Rápido de Argumentos de Linha de Comando
 
 ## Ver Todas as Opções
+
 ```bash
 dotnet run -- --help
 ```
 
 ## Tabela de Referência Rápida
 
-| Argumento | Forma Curta | Descrição | Exemplo |
-|-----------|-------------|-----------|---------|
-| `--config` | `-c` | Arquivo de configuração YAML | `--config config.yaml` |
-| `--input` | `-i` | Arquivo CSV de entrada | `--input data/vendas.csv` |
-| `--batch-lines` | `-b` | Linhas por lote | `--batch-lines 500` |
-| `--start-line` | `-s` | Linha inicial | `--start-line 100` |
-| `--max-lines` | `-n` | Máximo de linhas a processar | `--max-lines 1000` |
-| `--log-dir` | `-l` | Diretório de logs | `--log-dir logs/prod` |
-| `--delimiter` | `-d` | Delimitador do CSV | `--delimiter ";"` |
-| `--execution-id` | `--exec-id` | UUID para continuar execução | `--exec-id abc-123...` |
-| `--endpoint-name` | | Endpoint configurado a usar | `--endpoint-name producao` |
-| `--verbose` | `-v` | Logs detalhados | `--verbose` |
-| `--dry-run` | `--test` | Teste sem requisições | `--dry-run` |
+| Argumento         | Forma Curta | Descrição                    | Exemplo                    |
+|-------------------|-------------|------------------------------|----------------------------|
+| `--config`        | `-c`        | Arquivo de configuração YAML | `--config config.yaml`     |
+| `--input`         | `-i`        | Arquivo CSV de entrada       | `--input data/vendas.csv`  |
+| `--batch-lines`   | `-b`        | Linhas por lote              | `--batch-lines 500`        |
+| `--start-line`    | `-s`        | Linha inicial                | `--start-line 100`         |
+| `--max-lines`     | `-n`        | Máximo de linhas a processar | `--max-lines 1000`         |
+| `--log-dir`       | `-l`        | Diretório de logs            | `--log-dir logs/prod`      |
+| `--delimiter`     | `-d`        | Delimitador do CSV           | `--delimiter ";"`          |
+| `--execution-id`  | `--exec-id` | UUID para continuar execução | `--exec-id abc-123...`     |
+| `--endpoint-name` |             | Endpoint configurado a usar  | `--endpoint-name producao` |
+| `--verbose`       | `-v`        | Logs detalhados              | `--verbose`                |
+| `--dry-run`       | `--test`    | Teste sem requisições        | `--dry-run`                |
 
 ## Opções Principais
 
 ### Arquivo de Configuração
+
 ```bash
 # Especificar arquivo de configuração
 dotnet run -- --config config-prod.yaml
@@ -31,6 +33,7 @@ dotnet run -- -c config-test.yaml
 ```
 
 ### Sobrescrever Arquivo CSV
+
 ```bash
 # Processar arquivo diferente
 dotnet run -- --input data/vendas.csv
@@ -38,6 +41,7 @@ dotnet run -- -i data/clientes.csv
 ```
 
 ### Ajustar Processamento em Lote
+
 ```bash
 # Processar 500 linhas por vez
 dotnet run -- --batch-lines 500
@@ -45,6 +49,7 @@ dotnet run -- -b 1000
 ```
 
 ### Linha Inicial
+
 ```bash
 # Começar processamento a partir da linha 100
 dotnet run -- --start-line 100
@@ -55,6 +60,7 @@ dotnet run -- -i data/vendas.csv -s 1001 -v
 ```
 
 ### Limitar Quantidade de Linhas
+
 ```bash
 # Processar apenas as primeiras 1000 linhas
 dotnet run -- --max-lines 1000
@@ -69,6 +75,7 @@ dotnet run -- -s 101 -n 100 -v
 ```
 
 ### Execution ID (Controle de Checkpoint)
+
 ```bash
 # Nova execução (gera UUID automaticamente)
 dotnet run
@@ -86,6 +93,7 @@ dotnet run -- --execution-id 6869cdf3-5fb0-4178-966d-9a21015ffb4d --max-lines 10
 ```
 
 ### Selecionar Endpoint Específico
+
 ```bash
 # Usar endpoint nomeado configurado no YAML
 dotnet run -- --endpoint-name webhook1
@@ -96,6 +104,7 @@ dotnet run -- --endpoint-name teste --verbose
 ```
 
 ### Modo Dry-Run (Teste sem Requisições)
+
 ```bash
 # Validar configuração e dados sem fazer chamadas HTTP
 dotnet run -- --dry-run
@@ -109,6 +118,7 @@ dotnet run -- --dry-run --max-lines 100 -v
 ```
 
 ### Delimitador CSV
+
 ```bash
 # Usar ponto-e-vírgula como delimitador
 dotnet run -- --delimiter ";"
@@ -116,6 +126,7 @@ dotnet run -- -d "|"
 ```
 
 ### Diretório de Logs
+
 ```bash
 # Especificar diretório de logs diferente
 dotnet run -- --log-dir logs/producao
@@ -125,6 +136,7 @@ dotnet run -- -l logs/teste
 ## Exemplos Combinados
 
 ### Teste em Desenvolvimento com Dry-Run
+
 ```bash
 dotnet run -- \
   -i data/test.csv \
@@ -136,6 +148,7 @@ dotnet run -- \
 ```
 
 ### Produção com Todas as Configurações
+
 ```bash
 dotnet run -- \
   --config config-prod.yaml \
@@ -146,6 +159,7 @@ dotnet run -- \
 ```
 
 ### Teste Rápido com Webhook
+
 ```bash
 dotnet run -- \
   -i data/sample.csv \
@@ -156,6 +170,7 @@ dotnet run -- \
 ```
 
 ### Processar Arquivo com Configuração Específica
+
 ```bash
 dotnet run -- \
   --config config.yaml \
@@ -166,6 +181,7 @@ dotnet run -- \
 ```
 
 ### Retomar Processamento Após Falha
+
 ```bash
 # Se o processamento falhou, use o mesmo execution-id
 dotnet run -- \
@@ -181,6 +197,7 @@ dotnet run -- \
 ```
 
 ### Processar Intervalo Específico de Linhas
+
 ```bash
 # Processar linhas 1001 a 2000
 dotnet run -- \

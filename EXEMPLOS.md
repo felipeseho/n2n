@@ -2,7 +2,8 @@
 
 ## Exemplo 1: Webhook.site (para testes)
 
-Para testar a aplicação com uma API real sem precisar criar um servidor, você pode usar o [webhook.site](https://webhook.site):
+Para testar a aplicação com uma API real sem precisar criar um servidor, você pode usar
+o [webhook.site](https://webhook.site):
 
 1. Acesse https://webhook.site
 2. Copie a URL única gerada (ex: `https://webhook.site/12345678-abcd-...`)
@@ -24,6 +25,7 @@ endpoints:
 ```
 
 4. Execute o programa:
+
 ```bash
 dotnet run
 ```
@@ -171,21 +173,25 @@ Processamento concluído!
 ## Análise de Logs
 
 ### Verificar total de erros
+
 ```bash
 wc -l logs/process.log
 ```
 
 ### Ver apenas erros de validação (HTTP 400)
+
 ```bash
 grep ",400," logs/process.log
 ```
 
 ### Ver apenas erros de API (HTTP 500+)
+
 ```bash
 grep -E ",(500|502|503|504)," logs/process.log
 ```
 
 ### Extrair emails com erro
+
 ```bash
 awk -F',' '{print $3}' logs/process.log | tail -n +2
 ```
@@ -212,19 +218,23 @@ done
 ## Troubleshooting
 
 ### Erro: "Arquivo CSV não encontrado"
+
 - Verifique o caminho em `file.inputPath`
 - Use caminhos relativos ou absolutos
 
 ### Erro: "Connection timeout"
+
 - Aumente o `requestTimeout` do endpoint no config.yaml
 - Reduza `file.batchLines`
 - Verifique conectividade com a API
 
 ### Erro: "401 Unauthorized"
+
 - Verifique o header `Authorization` na configuração do endpoint
 - Certifique-se que o token não expirou
 
 ### Muitos erros de validação
+
 - Revise as expressões regex em `file.mapping`
 - Verifique o formato dos dados no CSV
 - Ajuste o formato de data se necessário
@@ -232,26 +242,31 @@ done
 ## Exemplos com Argumentos de Linha de Comando
 
 ### Processar arquivo diferente sem alterar config.yaml
+
 ```bash
 dotnet run -- --input data/vendas-janeiro.csv
 ```
 
 ### Usar endpoint de produção temporariamente
+
 ```bash
 dotnet run -- --endpoint-name producao --verbose
 ```
 
 ### Processar com lotes maiores
+
 ```bash
 dotnet run -- --batch-lines 1000 --verbose
 ```
 
 ### Processar arquivo com delimitador ponto-e-vírgula
+
 ```bash
 dotnet run -- --input data/export.csv --delimiter ";" --verbose
 ```
 
 ### Retomar processamento após falha
+
 ```bash
 # Se o processamento falhou, use o mesmo execution-id
 dotnet run -- \
@@ -260,6 +275,7 @@ dotnet run -- \
 ```
 
 ### Processar apenas um subconjunto de linhas para teste
+
 ```bash
 # Processar apenas as primeiras 100 linhas
 dotnet run -- \
@@ -273,7 +289,8 @@ dotnet run -- \
 
 ### Cenário: Importação de dados com metadados
 
-Quando você precisa enviar dados do CSV junto com informações fixas (como origem da importação, versão da API, tenant ID, etc.):
+Quando você precisa enviar dados do CSV junto com informações fixas (como origem da importação, versão da API, tenant
+ID, etc.):
 
 ```yaml
 endpoints:
@@ -303,6 +320,7 @@ endpoints:
 ```
 
 ### CSV de Entrada
+
 ```csv
 Nome,Email,Telefone
 João Silva,joao@email.com,11999998888
@@ -310,6 +328,7 @@ Maria Santos,maria@email.com,11988887777
 ```
 
 ### Payload Gerado
+
 Cada linha do CSV gera um payload com dados dinâmicos + valores fixos:
 
 ```json
@@ -365,6 +384,7 @@ Cada linha do CSV gera um payload com dados dinâmicos + valores fixos:
 Este exemplo mostra como enviar dados de diferentes clientes para endpoints específicos.
 
 ### Arquivo CSV (clientes.csv)
+
 ```csv
 Nome,Email,TipoCliente,Telefone
 João Silva,joao@empresa.com,premium,11999999999
@@ -464,6 +484,7 @@ endpoints:
 ### Payloads Gerados
 
 **Cliente Premium (João Silva):**
+
 ```json
 {
   "nomeCompleto": "João Silva",
@@ -474,9 +495,11 @@ endpoints:
   "sla": "24h"
 }
 ```
+
 *Enviado para: https://api.premium.com/clientes*
 
 **Cliente Basic (Maria Santos):**
+
 ```json
 {
   "nome": "Maria Santos",
@@ -485,21 +508,25 @@ endpoints:
   "prioridade": "normal"
 }
 ```
+
 *Enviado para: https://api.basico.com/usuarios*
 
 ### Execução
 
 **Processar usando a coluna TipoCliente do CSV:**
+
 ```bash
 dotnet run -- --config config.yaml --verbose
 ```
 
 **Forçar todos para endpoint premium (ignora coluna CSV):**
+
 ```bash
 dotnet run -- --config config.yaml --endpoint-name premium
 ```
 
 **Forçar todos para endpoint basic:**
+
 ```bash
 dotnet run -- --endpoint-name basic
 ```
@@ -516,7 +543,8 @@ dotnet run -- --endpoint-name basic
 
 ### Cenário 1: Processar apenas uma campanha específica
 
-Imagine que você tem um CSV com dados de múltiplas campanhas, mas quer processar apenas os registros de uma campanha específica:
+Imagine que você tem um CSV com dados de múltiplas campanhas, mas quer processar apenas os registros de uma campanha
+específica:
 
 ```yaml
 file:
@@ -607,7 +635,8 @@ file:
 
 ### Cenário 4: Filtrar múltiplos valores (OR simulado)
 
-Para processar registros que tenham um entre vários valores (operação OR), você precisa executar o programa múltiplas vezes ou usar configurações separadas:
+Para processar registros que tenham um entre vários valores (operação OR), você precisa executar o programa múltiplas
+vezes ou usar configurações separadas:
 
 #### Opção 1: Execuções separadas
 
@@ -687,9 +716,11 @@ Veja a documentação completa em [data/README-FILTROS.md](data/README-FILTROS.m
 
 ### Cenário: Normalização de dados antes do envio
 
-Muitas vezes os dados do CSV precisam ser transformados antes de serem enviados para a API. A aplicação oferece 20+ transformações prontas.
+Muitas vezes os dados do CSV precisam ser transformados antes de serem enviados para a API. A aplicação oferece 20+
+transformações prontas.
 
 ### Arquivo CSV (clientes.csv)
+
 ```csv
 Nome,Email,CPF,Telefone,CEP
 JOÃO SILVA,JOAO.SILVA@EMAIL.COM,12345678900,(11) 99999-9999,12345678
@@ -736,6 +767,7 @@ endpoints:
 ### Payloads Gerados
 
 **Linha 1 (JOÃO SILVA):**
+
 ```json
 {
   "nome": "João Silva",           // title-case
@@ -747,6 +779,7 @@ endpoints:
 ```
 
 **Linha 2 (maria santos):**
+
 ```json
 {
   "nome": "Maria Santos",          // title-case
@@ -760,6 +793,7 @@ endpoints:
 ### Mais Exemplos de Transformações
 
 #### Limpeza de Dados
+
 ```yaml
 mapping:
   # Remover espaços extras
@@ -779,6 +813,7 @@ mapping:
 ```
 
 #### Formatações Brasileiras
+
 ```yaml
 mapping:
   # CPF: 000.000.000-00
@@ -803,6 +838,7 @@ mapping:
 ```
 
 #### Transformações Especiais
+
 ```yaml
 mapping:
   # Codificar em Base64
@@ -829,6 +865,7 @@ mapping:
 ### Transformações Disponíveis
 
 **Texto:**
+
 - `uppercase` - MAIÚSCULAS
 - `lowercase` - minúsculas
 - `capitalize` - Primeira letra maiúscula
@@ -836,6 +873,7 @@ mapping:
 - `trim` - Remove espaços nas extremidades
 
 **Limpeza:**
+
 - `remove-spaces` - Remove todos os espaços
 - `remove-all-spaces` - Remove todos os espaços em branco
 - `remove-accents` - Remove acentos
@@ -843,12 +881,14 @@ mapping:
 - `remove-non-alphanumeric` - Remove caracteres especiais
 
 **Formatações Brasileiras:**
+
 - `format-cpf` - 000.000.000-00
 - `format-cnpj` - 00.000.000/0000-00
 - `format-phone-br` - (00) 00000-0000
 - `format-cep` - 00000-000
 
 **Outras:**
+
 - `slugify` - texto-url-friendly
 - `base64-encode` - Codifica em Base64
 - `url-encode` - Codifica para URL
@@ -875,6 +915,7 @@ dotnet run -- --dry-run --endpoint-name producao -v
 ```
 
 **Vantagens:**
+
 - Valida arquivo CSV e configuração YAML
 - Testa transformações e filtros
 - Não consome créditos da API
@@ -928,6 +969,7 @@ checkpoints/
 ```
 
 **Vantagens:**
+
 - Rastreabilidade completa de cada processamento
 - Múltiplas execuções do mesmo arquivo sem conflito
 - Fácil retomada após falhas

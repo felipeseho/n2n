@@ -3,132 +3,106 @@ using n2n.Services;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace n2n;
+namespace n2n.Commands;
 
-public class MainCommand : AsyncCommand<CommandSettings>
+public class MainCommand : AsyncCommand<MainCommandSettings>
 {
-    public override async Task<int> ExecuteAsync(CommandContext context, CommandSettings commandSettings, CancellationToken cancellationToken)
+    private readonly ConfigurationService _configurationService;
+    private readonly AppExecutionContext _executionContext;
+    private readonly DashboardService _dashboardService;
+    private readonly CsvProcessorService _csvProcessorService;
+
+    public MainCommand(
+        ConfigurationService configurationService,
+        AppExecutionContext executionContext,
+        DashboardService dashboardService,
+        CsvProcessorService csvProcessorService)
+    {
+        _configurationService = configurationService;
+        _executionContext = executionContext;
+        _dashboardService = dashboardService;
+        _csvProcessorService = csvProcessorService;
+    }
+
+    public override async Task<int> ExecuteAsync(
+        CommandContext context,
+        MainCommandSettings settings,
+        CancellationToken cancellationToken)
     {
         try
         {
-            // Verificar se o arquivo de configuração existe
-            if (!File.Exists(commandSettings.ConfigPath))
+            if (!File.Exists(settings.ConfigPath))
             {
-                AnsiConsole.MarkupLine($"[red]✗[/] Arquivo de configuração não encontrado: [yellow]{commandSettings.ConfigPath}[/]");
-                AnsiConsole.MarkupLine("[grey]💡 Use: csv-to-api --config caminho/do/arquivo.yaml[/]");
+                AnsiConsole.MarkupLine(
+                    $"[red]✗[/] Arquivo de configuração não encontrado: [yellow]{settings.ConfigPath}[/]");
+                AnsiConsole.MarkupLine("[grey]💡 Use: n2n --config caminho/do/arquivo.yaml[/]");
+
                 return 1;
             }
 
             // Gerar ou usar executionId existente
-            var currentExecutionId = commandSettings.ExecutionId ?? Guid.NewGuid().ToString();
+            var currentExecutionId = settings.ExecutionId ?? Guid.NewGuid().ToString();
 
             // Criar opções de linha de comando
             var cmdOptions = new CommandLineOptions
             {
-                ConfigPath = commandSettings.ConfigPath,
-                InputPath = commandSettings.InputPath,
-                BatchLines = commandSettings.BatchLines,
-                LogDirectory = commandSettings.LogDirectory,
-                CsvDelimiter = commandSettings.Delimiter,
-                StartLine = commandSettings.StartLine,
-                MaxLines = commandSettings.MaxLines,
+                ConfigPath = settings.ConfigPath,
+                InputPath = settings.InputPath,
+                BatchLines = settings.BatchLines,
+                LogDirectory = settings.LogDirectory,
+                CsvDelimiter = settings.Delimiter,
+                StartLine = settings.StartLine,
+                MaxLines = settings.MaxLines,
                 ExecutionId = currentExecutionId,
-                EndpointName = commandSettings.EndpointName,
-                Verbose = commandSettings.Verbose,
-                DryRun = commandSettings.DryRun
+                EndpointName = settings.EndpointName,
+                Verbose = settings.Verbose,
+                DryRun = settings.DryRun
             };
-
-            // Mostrar configuração se verbose
-            if (commandSettings.Verbose)
-            {
-                var configTable = new Table()
-                    .Border(TableBorder.Rounded)
-                    .BorderColor(Color.Grey)
-                    .AddColumn(new TableColumn("[cyan1]Configuração[/]").Centered())
-                    .AddColumn(new TableColumn("[cyan1]Valor[/]"));
-
-                configTable.AddRow("Config", commandSettings.ConfigPath);
-                if (commandSettings.InputPath != null) configTable.AddRow("Input", commandSettings.InputPath);
-                if (commandSettings.BatchLines != null) configTable.AddRow("Batch Lines", commandSettings.BatchLines.ToString()!);
-                if (commandSettings.StartLine != null) configTable.AddRow("Start Line", commandSettings.StartLine.ToString()!);
-                if (commandSettings.MaxLines != null) configTable.AddRow("Max Lines", commandSettings.MaxLines.ToString()!);
-                if (commandSettings.EndpointName != null) configTable.AddRow("Endpoint Name", commandSettings.EndpointName);
-                if (commandSettings.DryRun) configTable.AddRow("[yellow]Modo[/]", "[yellow]DRY RUN[/]");
-
-                AnsiConsole.Write(configTable);
-                AnsiConsole.WriteLine();
-            }
-
-            // Inicializar serviços
-            var configService = new ConfigurationService();
-            var validationService = new ValidationService();
-            var loggingService = new LoggingService();
-            var checkpointService = new CheckpointService();
-            var metricsService = new MetricsService();
-
-            // Carregar configuração do YAML
-            Configuration config = AnsiConsole
-                .Status()
-                .Spinner(Spinner.Known.Dots)
-                .SpinnerStyle(Style.Parse("cyan1"))
-                .Start<Configuration>("[cyan1]Carregando configuração...[/]", ctx =>
-                {
-                    return configService.LoadConfiguration(commandSettings.ConfigPath);
-                });
-
-            config = configService.LoadConfiguration(commandSettings.ConfigPath);
-
-            // Mesclar com opções de linha de comando
-            config = configService.MergeWithCommandLineOptions(config, cmdOptions);
-
+            
+            // Configurar informações da aplicação no Dashboard
+            _dashboardService.SetApplicationInfo("n2n", "1.0.0", "CSV to API Data Processor");
+            
+            // Carregar e validar configuração
+            _dashboardService.AddLogMessage("Carregando configuração...", "INFO");
+            var config = _configurationService.LoadConfiguration(settings.ConfigPath);
+            config = _configurationService.MergeWithCommandLineOptions(config, cmdOptions);
+            _dashboardService.AddLogMessage("Configuração carregada e mesclada com sucesso", "SUCCESS");
+            
             // Validar configuração final
-            if (!configService.ValidateConfiguration(config))
+            _dashboardService.AddLogMessage("Validando configuração", "INFO");
+            if (!_configurationService.ValidateConfiguration(config))
             {
+                _dashboardService.AddLogMessage("Configuração inválida", "ERROR");
                 AnsiConsole.MarkupLine("[red]✗ Configuração inválida[/]");
                 return 1;
             }
+            _dashboardService.AddLogMessage("Configuração validada com sucesso", "SUCCESS");
 
             // Criar diretórios necessários
-            configService.EnsureDirectoriesExist(config);
-
-            // Exibir UUID da execução
-            var panel = new Panel(
-                    new Markup(commandSettings.ExecutionId != null
-                        ? $"[cyan1]🔄 Continuando execução[/]\n[yellow]{currentExecutionId}[/]"
-                        : $"[cyan1]✨ Nova execução iniciada[/]\n[yellow]{currentExecutionId}[/]"))
-                .Border(BoxBorder.Rounded)
-                .BorderColor(Color.Cyan1)
-                .Header("[cyan1]Execution ID[/]");
-
-            AnsiConsole.Write(panel);
-            AnsiConsole.WriteLine();
+            _dashboardService.AddLogMessage("Criando diretórios necessários", "INFO");
+            _configurationService.EnsureDirectoriesExist(config);
 
             // Gerar caminhos de execução
-            var executionPaths = configService.GenerateExecutionPaths(config, currentExecutionId);
+            var executionPaths = _configurationService.GenerateExecutionPaths(config, currentExecutionId);
 
-            // Usar primeiro endpoint ou default para inicializar ApiClientService
-            var referenceEndpoint = config.Endpoints.FirstOrDefault();
-            if (referenceEndpoint == null)
+            // Obter endpoint ativo
+            var activeEndpoint = _configurationService.GetEndpointConfiguration(config, cmdOptions.EndpointName);
+
+            // Preencher ExecutionContext (agora todas as dependências têm a configuração)
+            _executionContext.Configuration = config;
+            _executionContext.CommandLineOptions = cmdOptions;
+            _executionContext.ExecutionPaths = executionPaths;
+            _executionContext.ActiveEndpoint = activeEndpoint;
+
+            if (settings.DryRun)
             {
-                AnsiConsole.MarkupLine("[red]✗ Nenhum endpoint configurado[/]");
-                return 1;
+                _dashboardService.AddLogMessage("MODO DRY RUN ATIVADO - Nenhuma requisição será enviada", "WARNING");
             }
 
-            // Inicializar ApiClientService com o endpoint de referência e MetricsService
-            var apiClientService = new ApiClientService(loggingService, referenceEndpoint, metricsService);
-            var processorService = new CsvProcessorService(validationService, loggingService, apiClientService, checkpointService, metricsService);
+            _dashboardService.AddLogMessage("Iniciando processamento do arquivo CSV", "INFO");
 
-            if (commandSettings.DryRun)
-            {
-                AnsiConsole.MarkupLine("[yellow]🔍 MODO DRY RUN: Nenhuma requisição será enviada à API[/]");
-                AnsiConsole.WriteLine();
-            }
-
-            AnsiConsole.MarkupLine("[cyan1]🚀 Iniciando processamento do arquivo CSV...[/]");
-            AnsiConsole.WriteLine();
-
-            // Processar arquivo CSV
-            await processorService.ProcessCsvFileAsync(config, executionPaths, commandSettings.DryRun, cmdOptions.EndpointName);
+            // Processar arquivo CSV (passando dashboardService como parâmetro)
+            await _csvProcessorService.ProcessCsvFileAsync(_dashboardService);
 
             // Sucesso
             var successRule = new Rule("[green]✓ Processamento concluído com sucesso![/]")

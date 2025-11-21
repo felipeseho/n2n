@@ -1,7 +1,7 @@
-namespace CsvToApi.Models;
+namespace n2n.Models;
 
 /// <summary>
-/// Modelo para armazenar métricas de processamento
+///     Modelo para armazenar métricas de processamento
 /// </summary>
 public class ProcessingMetrics
 {
@@ -13,30 +13,36 @@ public class ProcessingMetrics
     public int ErrorCount { get; set; }
     public int ValidationErrors { get; set; }
     public int SkippedLines { get; set; }
+    public int FilteredLines { get; set; }
     public TimeSpan ElapsedTime => (EndTime ?? DateTime.Now) - StartTime;
-    public double LinesPerSecond => ElapsedTime.TotalSeconds > 0 
-        ? ProcessedLines / ElapsedTime.TotalSeconds 
+
+    public double LinesPerSecond => ElapsedTime.TotalSeconds > 0
+        ? ProcessedLines / ElapsedTime.TotalSeconds
         : 0;
-    public double SuccessRate => ProcessedLines > 0 
-        ? (SuccessCount * 100.0 / ProcessedLines) 
+
+    public double SuccessRate => ProcessedLines > 0
+        ? SuccessCount * 100.0 / ProcessedLines
         : 0;
-    public double ErrorRate => ProcessedLines > 0 
-        ? (ErrorCount * 100.0 / ProcessedLines) 
+
+    public double ErrorRate => ProcessedLines > 0
+        ? ErrorCount * 100.0 / ProcessedLines
         : 0;
+
     public TimeSpan EstimatedTimeRemaining
     {
         get
         {
             if (LinesPerSecond <= 0 || TotalLines == 0)
                 return TimeSpan.Zero;
-            
+
             var remainingLines = TotalLines - ProcessedLines;
             var secondsRemaining = remainingLines / LinesPerSecond;
             return TimeSpan.FromSeconds(secondsRemaining);
         }
     }
-    public double ProgressPercentage => TotalLines > 0 
-        ? (ProcessedLines * 100.0 / TotalLines) 
+
+    public double ProgressPercentage => TotalLines > 0
+        ? ProcessedLines * 100.0 / TotalLines
         : 0;
 
     // Métricas de requisições HTTP

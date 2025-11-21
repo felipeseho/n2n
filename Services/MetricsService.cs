@@ -1,18 +1,18 @@
 using System.Diagnostics;
-using CsvToApi.Models;
+using n2n.Models;
 using Spectre.Console;
 
-namespace CsvToApi.Services;
+namespace n2n.Services;
 
 /// <summary>
-/// Serviço para coletar e gerenciar métricas de processamento
+///     Serviço para coletar e gerenciar métricas de processamento
 /// </summary>
 public class MetricsService
 {
-    private readonly ProcessingMetrics _metrics;
-    private readonly List<long> _responseTimes = new();
     private readonly List<long> _batchTimes = new();
     private readonly object _lock = new();
+    private readonly ProcessingMetrics _metrics;
+    private readonly List<long> _responseTimes = new();
 
     public MetricsService()
     {
@@ -22,10 +22,13 @@ public class MetricsService
         };
     }
 
-    public ProcessingMetrics GetMetrics() => _metrics;
+    public ProcessingMetrics GetMetrics()
+    {
+        return _metrics;
+    }
 
     /// <summary>
-    /// Inicia o rastreamento do processamento
+    ///     Inicia o rastreamento do processamento
     /// </summary>
     public void StartProcessing(int totalLines)
     {
@@ -37,7 +40,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Finaliza o rastreamento do processamento
+    ///     Finaliza o rastreamento do processamento
     /// </summary>
     public void EndProcessing()
     {
@@ -48,7 +51,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Registra linhas puladas
+    ///     Registra linhas puladas
     /// </summary>
     public void RecordSkippedLines(int count)
     {
@@ -59,7 +62,18 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Registra uma linha processada com sucesso
+    ///     Registra linhas filtradas
+    /// </summary>
+    public void RecordFilteredLines(int count)
+    {
+        lock (_lock)
+        {
+            _metrics.FilteredLines += count;
+        }
+    }
+
+    /// <summary>
+    ///     Registra uma linha processada com sucesso
     /// </summary>
     public void RecordSuccess()
     {
@@ -71,7 +85,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Registra um erro de processamento
+    ///     Registra um erro de processamento
     /// </summary>
     public void RecordError()
     {
@@ -83,7 +97,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Registra um erro de validação
+    ///     Registra um erro de validação
     /// </summary>
     public void RecordValidationError()
     {
@@ -94,7 +108,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Registra uma tentativa de retry
+    ///     Registra uma tentativa de retry
     /// </summary>
     public void RecordRetry()
     {
@@ -105,41 +119,38 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Registra tempo de resposta HTTP
+    ///     Registra tempo de resposta HTTP
     /// </summary>
     public void RecordResponseTime(long milliseconds)
     {
         lock (_lock)
         {
             _responseTimes.Add(milliseconds);
-            
+
             if (milliseconds < _metrics.MinResponseTimeMs)
                 _metrics.MinResponseTimeMs = milliseconds;
-            
+
             if (milliseconds > _metrics.MaxResponseTimeMs)
                 _metrics.MaxResponseTimeMs = milliseconds;
-            
+
             _metrics.AverageResponseTimeMs = _responseTimes.Average();
         }
     }
 
     /// <summary>
-    /// Registra código de status HTTP
+    ///     Registra código de status HTTP
     /// </summary>
     public void RecordHttpStatusCode(int statusCode)
     {
         lock (_lock)
         {
-            if (!_metrics.HttpStatusCodes.ContainsKey(statusCode))
-            {
-                _metrics.HttpStatusCodes[statusCode] = 0;
-            }
+            if (!_metrics.HttpStatusCodes.ContainsKey(statusCode)) _metrics.HttpStatusCodes[statusCode] = 0;
             _metrics.HttpStatusCodes[statusCode]++;
         }
     }
 
     /// <summary>
-    /// Registra tempo de processamento de um batch
+    ///     Registra tempo de processamento de um batch
     /// </summary>
     public void RecordBatchTime(long milliseconds)
     {
@@ -152,7 +163,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Retorna uma medição de tempo para um batch
+    ///     Retorna uma medição de tempo para um batch
     /// </summary>
     public Stopwatch StartBatchTimer()
     {
@@ -160,7 +171,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Retorna uma medição de tempo para uma requisição
+    ///     Retorna uma medição de tempo para uma requisição
     /// </summary>
     public Stopwatch StartRequestTimer()
     {
@@ -168,7 +179,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Renderiza dashboard de métricas no console
+    ///     Renderiza dashboard de métricas no console
     /// </summary>
     public void DisplayDashboard(bool showDetails = true)
     {
@@ -185,23 +196,25 @@ public class MetricsService
 
         // Progresso
         progressTable.AddRow("[cyan1]Total de Linhas[/]", $"[yellow]{metrics.TotalLines:N0}[/]");
-        progressTable.AddRow("[cyan1]Linhas Processadas[/]", $"[green]{metrics.ProcessedLines:N0}[/] [grey]({metrics.ProgressPercentage:F1}%)[/]");
+        progressTable.AddRow("[cyan1]Linhas Processadas[/]",
+            $"[green]{metrics.ProcessedLines:N0}[/] [grey]({metrics.ProgressPercentage:F1}%)[/]");
         if (metrics.SkippedLines > 0)
             progressTable.AddRow("[cyan1]Linhas Puladas[/]", $"[yellow]{metrics.SkippedLines:N0}[/]");
-        
+
         // Resultados
         progressTable.AddEmptyRow();
-        progressTable.AddRow("[bold green]✓ Sucessos[/]", $"[green]{metrics.SuccessCount:N0}[/] [grey]({metrics.SuccessRate:F1}%)[/]");
-        progressTable.AddRow("[bold red]✗ Erros HTTP[/]", $"[red]{metrics.ErrorCount:N0}[/] [grey]({metrics.ErrorRate:F1}%)[/]");
+        progressTable.AddRow("[bold green]✓ Sucessos[/]",
+            $"[green]{metrics.SuccessCount:N0}[/] [grey]({metrics.SuccessRate:F1}%)[/]");
+        progressTable.AddRow("[bold red]✗ Erros HTTP[/]",
+            $"[red]{metrics.ErrorCount:N0}[/] [grey]({metrics.ErrorRate:F1}%)[/]");
         progressTable.AddRow("[bold yellow]⚠ Erros de Validação[/]", $"[yellow]{metrics.ValidationErrors:N0}[/]");
-        
+
         // Tempo
         progressTable.AddEmptyRow();
         progressTable.AddRow("[cyan1]⏱️  Tempo Decorrido[/]", $"[yellow]{FormatTimeSpan(elapsed)}[/]");
         if (metrics.TotalLines > metrics.ProcessedLines && metrics.ProcessedLines > 0)
-        {
-            progressTable.AddRow("[cyan1]⏳ Tempo Restante[/]", $"[yellow]{FormatTimeSpan(metrics.EstimatedTimeRemaining)}[/]");
-        }
+            progressTable.AddRow("[cyan1]⏳ Tempo Restante[/]",
+                $"[yellow]{FormatTimeSpan(metrics.EstimatedTimeRemaining)}[/]");
         progressTable.AddRow("[cyan1]🚀 Velocidade[/]", $"[green]{metrics.LinesPerSecond:F1}[/] [grey]linhas/seg[/]");
 
         AnsiConsole.Write(progressTable);
@@ -212,14 +225,14 @@ public class MetricsService
             .Width(60)
             .Label("[bold cyan1]Progresso[/]")
             .CenterLabel();
-        
+
         if (metrics.SuccessCount > 0)
             progressBar.AddItem("Sucessos", metrics.SuccessCount, Color.Green);
         if (metrics.ErrorCount > 0)
             progressBar.AddItem("Erros", metrics.ErrorCount, Color.Red);
         if (metrics.ValidationErrors > 0)
             progressBar.AddItem("Validação", metrics.ValidationErrors, Color.Yellow);
-        
+
         if (metrics.SuccessCount > 0 || metrics.ErrorCount > 0 || metrics.ValidationErrors > 0)
         {
             AnsiConsole.Write(progressBar);
@@ -244,6 +257,7 @@ public class MetricsService
                     perfTable.AddRow("[cyan1]Tempo Mínimo[/]", $"[green]{metrics.MinResponseTimeMs} ms[/]");
                     perfTable.AddRow("[cyan1]Tempo Máximo[/]", $"[red]{metrics.MaxResponseTimeMs} ms[/]");
                 }
+
                 if (metrics.TotalRetries > 0)
                     perfTable.AddRow("[cyan1]Total de Retries[/]", $"[yellow]{metrics.TotalRetries}[/]");
 
@@ -281,7 +295,7 @@ public class MetricsService
 
                 foreach (var kvp in metrics.HttpStatusCodes.OrderBy(x => x.Key))
                 {
-                    var percentage = (kvp.Value * 100.0 / metrics.ProcessedLines);
+                    var percentage = kvp.Value * 100.0 / metrics.ProcessedLines;
                     var color = GetStatusColor(kvp.Key);
                     statusTable.AddRow(
                         $"[{color}]{kvp.Key}[/]",
@@ -296,7 +310,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Exibe resumo compacto durante o processamento
+    ///     Exibe resumo compacto durante o processamento
     /// </summary>
     public void DisplayProgressUpdate()
     {
@@ -305,7 +319,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Formata TimeSpan para exibição amigável
+    ///     Formata TimeSpan para exibição amigável
     /// </summary>
     private string FormatTimeSpan(TimeSpan ts)
     {
@@ -317,7 +331,7 @@ public class MetricsService
     }
 
     /// <summary>
-    /// Retorna cor apropriada para código HTTP
+    ///     Retorna cor apropriada para código HTTP
     /// </summary>
     private string GetStatusColor(int statusCode)
     {

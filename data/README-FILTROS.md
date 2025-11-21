@@ -6,18 +6,18 @@ Este diretório contém um exemplo prático de como usar filtros de dados.
 
 O arquivo `exemplo-filtros.csv` contém 10 linhas de teste:
 
-| # | Name | Email | Campaign | Status | Plan |
-|---|------|-------|----------|--------|------|
-| 1 | João Silva | joao@exemplo.com | promo2024 | ativo | premium |
-| 2 | Maria Santos | maria@test.com | promo2024 | ativo | basic |
-| 3 | Pedro Oliveira | pedro@exemplo.com | natal2024 | ativo | premium |
-| 4 | Ana Costa | ana@exemplo.com | promo2024 | cancelado | premium |
-| 5 | Carlos Lima | carlos@exemplo.com | promo2024 | ativo | premium |
-| 6 | Julia Ferreira | julia@exemplo.com | promo2024 | ativo | basic |
-| 7 | Roberto Alves | roberto@exemplo.com | verao2024 | ativo | premium |
-| 8 | Fernanda Souza | fernanda@exemplo.com | promo2024 | suspenso | premium |
-| 9 | Lucas Pereira | lucas@exemplo.com | promo2024 | ativo | premium |
-| 10 | Patricia Rocha | patricia@example.com | promo2024 | ativo | premium |
+| #  | Name           | Email                | Campaign  | Status    | Plan    |
+|----|----------------|----------------------|-----------|-----------|---------|
+| 1  | João Silva     | joao@exemplo.com     | promo2024 | ativo     | premium |
+| 2  | Maria Santos   | maria@test.com       | promo2024 | ativo     | basic   |
+| 3  | Pedro Oliveira | pedro@exemplo.com    | natal2024 | ativo     | premium |
+| 4  | Ana Costa      | ana@exemplo.com      | promo2024 | cancelado | premium |
+| 5  | Carlos Lima    | carlos@exemplo.com   | promo2024 | ativo     | premium |
+| 6  | Julia Ferreira | julia@exemplo.com    | promo2024 | ativo     | basic   |
+| 7  | Roberto Alves  | roberto@exemplo.com  | verao2024 | ativo     | premium |
+| 8  | Fernanda Souza | fernanda@exemplo.com | promo2024 | suspenso  | premium |
+| 9  | Lucas Pereira  | lucas@exemplo.com    | promo2024 | ativo     | premium |
+| 10 | Patricia Rocha | patricia@example.com | promo2024 | ativo     | premium |
 
 ## Filtros Configurados
 
@@ -51,62 +51,62 @@ Com os filtros acima, apenas **3 linhas** serão processadas:
 ### ✅ Linhas que PASSAM nos filtros (serão processadas):
 
 - **Linha 1** - João Silva
-  - ✓ campaign = "promo2024"
-  - ✓ status = "ativo" (diferente de "cancelado")
-  - ✓ plan = "premium" (contém "premium")
+    - ✓ campaign = "promo2024"
+    - ✓ status = "ativo" (diferente de "cancelado")
+    - ✓ plan = "premium" (contém "premium")
 
 - **Linha 5** - Carlos Lima
-  - ✓ campaign = "promo2024"
-  - ✓ status = "ativo" (diferente de "cancelado")
-  - ✓ plan = "premium" (contém "premium")
+    - ✓ campaign = "promo2024"
+    - ✓ status = "ativo" (diferente de "cancelado")
+    - ✓ plan = "premium" (contém "premium")
 
 - **Linha 9** - Lucas Pereira
-  - ✓ campaign = "promo2024"
-  - ✓ status = "ativo" (diferente de "cancelado")
-  - ✓ plan = "premium" (contém "premium")
+    - ✓ campaign = "promo2024"
+    - ✓ status = "ativo" (diferente de "cancelado")
+    - ✓ plan = "premium" (contém "premium")
 
 ### ❌ Linhas que NÃO PASSAM nos filtros (serão ignoradas):
 
 - **Linha 2** - Maria Santos
-  - ✓ campaign = "promo2024"
-  - ✓ status = "ativo"
-  - ✗ plan = "basic" (não contém "premium")
+    - ✓ campaign = "promo2024"
+    - ✓ status = "ativo"
+    - ✗ plan = "basic" (não contém "premium")
 
 - **Linha 3** - Pedro Oliveira
-  - ✗ campaign = "natal2024" (diferente de "promo2024")
-  - ✓ status = "ativo"
-  - ✓ plan = "premium"
+    - ✗ campaign = "natal2024" (diferente de "promo2024")
+    - ✓ status = "ativo"
+    - ✓ plan = "premium"
 
 - **Linha 4** - Ana Costa
-  - ✓ campaign = "promo2024"
-  - ✗ status = "cancelado" (igual a "cancelado")
-  - ✓ plan = "premium"
+    - ✓ campaign = "promo2024"
+    - ✗ status = "cancelado" (igual a "cancelado")
+    - ✓ plan = "premium"
 
 - **Linha 6** - Julia Ferreira
-  - ✓ campaign = "promo2024"
-  - ✓ status = "ativo"
-  - ✗ plan = "basic" (não contém "premium")
+    - ✓ campaign = "promo2024"
+    - ✓ status = "ativo"
+    - ✗ plan = "basic" (não contém "premium")
 
 - **Linha 7** - Roberto Alves
-  - ✗ campaign = "verao2024" (diferente de "promo2024")
-  - ✓ status = "ativo"
-  - ✓ plan = "premium"
+    - ✗ campaign = "verao2024" (diferente de "promo2024")
+    - ✓ status = "ativo"
+    - ✓ plan = "premium"
 
 - **Linha 8** - Fernanda Souza
-  - ✓ campaign = "promo2024"
-  - ✗ status = "suspenso" (mas o filtro é apenas para "cancelado", então passa)
-  - ✗ Mas falha na validação de email (suspenso não é "cancelado", então passaria, mas...)
-  - Aguarde, vamos recalcular...
-  - ✓ campaign = "promo2024"
-  - ✓ status = "suspenso" (diferente de "cancelado")
-  - ✓ plan = "premium"
-  - ✓ **NA VERDADE ESTA LINHA PASSA!**
+    - ✓ campaign = "promo2024"
+    - ✗ status = "suspenso" (mas o filtro é apenas para "cancelado", então passa)
+    - ✗ Mas falha na validação de email (suspenso não é "cancelado", então passaria, mas...)
+    - Aguarde, vamos recalcular...
+    - ✓ campaign = "promo2024"
+    - ✓ status = "suspenso" (diferente de "cancelado")
+    - ✓ plan = "premium"
+    - ✓ **NA VERDADE ESTA LINHA PASSA!**
 
 - **Linha 10** - Patricia Rocha
-  - ✓ campaign = "promo2024"
-  - ✓ status = "ativo"
-  - ✓ plan = "premium"
-  - ✓ **ESTA LINHA TAMBÉM PASSA!**
+    - ✓ campaign = "promo2024"
+    - ✓ status = "ativo"
+    - ✓ plan = "premium"
+    - ✓ **ESTA LINHA TAMBÉM PASSA!**
 
 ## Correção: Resultado Real
 

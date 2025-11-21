@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using Spectre.Console.Cli;
 
-namespace n2n;
+namespace n2n.Commands;
 
-public class CommandSettings : Spectre.Console.Cli.CommandSettings
+public class MainCommandSettings : CommandSettings
 {
     [CommandOption("-c|--config")]
     [Description("Caminho do arquivo de configuração YAML")]

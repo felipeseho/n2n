@@ -1,7 +1,7 @@
-namespace CsvToApi.Models;
+namespace n2n.Models;
 
 /// <summary>
-/// Mapeamento entre coluna CSV e atributo da API
+///     Mapeamento entre coluna CSV e atributo da API
 /// </summary>
 public class ApiMapping
 {
@@ -10,4 +10,3 @@ public class ApiMapping
     public string? Transform { get; set; }
     public string? FixedValue { get; set; }
 }
-

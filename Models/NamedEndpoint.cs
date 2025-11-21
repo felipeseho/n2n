@@ -1,7 +1,7 @@
-namespace CsvToApi.Models;
+namespace n2n.Models;
 
 /// <summary>
-/// Configuração de um endpoint
+///     Configuração de um endpoint
 /// </summary>
 public class NamedEndpoint
 {
@@ -15,4 +15,3 @@ public class NamedEndpoint
     public int? MaxRequestsPerSecond { get; set; }
     public List<ApiMapping> Mapping { get; set; } = new();
 }
-

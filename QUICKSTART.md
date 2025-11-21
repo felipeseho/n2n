@@ -3,21 +3,25 @@
 ## Em 5 Minutos
 
 ### 1. Verificar Pré-requisitos
+
 ```bash
 dotnet --version  # Deve ser >= 10.0
 ```
 
 ### 2. Navegar para o Projeto
+
 ```bash
 cd /Users/felipeseho/Development/felipeseho/csv-to-api/CsvToApi/CsvToApi
 ```
 
 ### 3. Restaurar Dependências
+
 ```bash
 dotnet restore
 ```
 
 ### 4. Executar
+
 ```bash
 dotnet run
 ```
@@ -32,7 +36,7 @@ dotnet run
    ```bash
    dotnet run -- --endpoint "https://webhook.site/SUA-URL-AQUI" --verbose
    ```
-   
+
    **OU** edite `config.yaml`:
    ```yaml
    api:
@@ -47,6 +51,7 @@ dotnet run
 ### Opção 2: Usar Argumentos de Linha de Comando
 
 Sobrescreva configurações sem editar arquivos:
+
 ```bash
 # Teste rápido
 dotnet run -- --input data/input.csv --batch-lines 10 --verbose
@@ -69,6 +74,7 @@ dotnet run -- --execution-id abc-123-def-456 --verbose
 ```
 
 Ver todas as opções:
+
 ```bash
 dotnet run -- --help
 ```
@@ -76,6 +82,7 @@ dotnet run -- --help
 ### Opção 3: Seu Próprio Endpoint
 
 Edite `config.yaml` com suas configurações:
+
 ```yaml
 file:
     inputPath: "data/seu-arquivo.csv"
@@ -105,6 +112,7 @@ CsvToApi/
 ## Exemplo de CSV
 
 Crie `data/meu-arquivo.csv`:
+
 ```csv
 Name,Email,Phone
 John Doe,john@example.com,+1234567890
@@ -114,6 +122,7 @@ Jane Smith,jane@example.com,+0987654321
 ## Exemplo de Configuração Mínima
 
 Crie `config.yaml`:
+
 ```yaml
 file:
     inputPath: "data/meu-arquivo.csv"
@@ -201,6 +210,7 @@ dotnet clean
 ## Troubleshooting Rápido
 
 ### ❌ "Arquivo CSV não encontrado"
+
 ```bash
 # Verificar se o arquivo existe
 ls -la data/input.csv
@@ -210,12 +220,14 @@ inputPath: "/caminho/completo/para/arquivo.csv"
 ```
 
 ### ❌ "URL do endpoint não configurada"
+
 ```bash
 # Verificar config.yaml
 cat config.yaml | grep endpointUrl
 ```
 
 ### ❌ Build fails
+
 ```bash
 # Limpar e rebuildar
 dotnet clean

@@ -1,9 +1,9 @@
-using CsvToApi.Models;
+using n2n.Models;
 
-namespace CsvToApi.Services;
+namespace n2n.Services;
 
 /// <summary>
-/// Serviço responsável por aplicar filtros aos registros do CSV
+///     Serviço responsável por aplicar filtros aos registros do CSV
 /// </summary>
 public class FilterService
 {
@@ -25,32 +25,25 @@ public class FilterService
     }
 
     /// <summary>
-    /// Verifica se um registro CSV passa por todos os filtros configurados
+    ///     Verifica se um registro CSV passa por todos os filtros configurados
     /// </summary>
     /// <param name="record">Registro CSV a ser avaliado</param>
     /// <returns>True se o registro passa por todos os filtros, False caso contrário</returns>
     public bool PassesFilters(CsvRecord record)
     {
         // Se não houver filtros, todos os registros passam
-        if (_filters.Count == 0)
-        {
-            return true;
-        }
+        if (_filters.Count == 0) return true;
 
         // O registro deve passar por TODOS os filtros (operação AND)
         foreach (var filter in _filters)
-        {
             if (!ApplyFilter(record, filter))
-            {
                 return false;
-            }
-        }
 
         return true;
     }
 
     /// <summary>
-    /// Aplica um filtro individual a um registro
+    ///     Aplica um filtro individual a um registro
     /// </summary>
     /// <param name="record">Registro CSV</param>
     /// <param name="filter">Filtro a ser aplicado</param>
@@ -59,10 +52,8 @@ public class FilterService
     {
         // Verifica se a coluna existe no registro
         if (!record.Data.TryGetValue(filter.Column, out var value))
-        {
             // Se a coluna não existe, considera que não passou no filtro
             return false;
-        }
 
         // Converte os valores para comparação considerando case sensitivity
         var recordValue = value ?? string.Empty;
@@ -86,14 +77,11 @@ public class FilterService
     }
 
     /// <summary>
-    /// Retorna estatísticas sobre os filtros aplicados
+    ///     Retorna estatísticas sobre os filtros aplicados
     /// </summary>
     public string GetFiltersSummary()
     {
-        if (_filters.Count == 0)
-        {
-            return "Nenhum filtro configurado";
-        }
+        if (_filters.Count == 0) return "Nenhum filtro configurado";
 
         var summary = $"Filtros ativos ({_filters.Count}):\n";
         foreach (var filter in _filters)

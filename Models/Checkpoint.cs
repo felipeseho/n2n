@@ -1,7 +1,7 @@
-namespace CsvToApi.Models;
+namespace n2n.Models;
 
 /// <summary>
-/// Modelo de checkpoint para retomar processamento
+///     Modelo de checkpoint para retomar processamento
 /// </summary>
 public class Checkpoint
 {

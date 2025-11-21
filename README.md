@@ -6,7 +6,8 @@ Aplicação .NET 10 que processa arquivos CSV em lotes e envia os dados para uma
 
 ## ✨ Interface Visual Moderna com Spectre.Console
 
-Este projeto utiliza a biblioteca [Spectre.Console](https://spectreconsole.net/) para oferecer uma experiência de console rica e visualmente atraente:
+Este projeto utiliza a biblioteca [Spectre.Console](https://spectreconsole.net/) para oferecer uma experiência de
+console rica e visualmente atraente:
 
 - 🎨 **Banner ASCII Art** estilizado
 - 📊 **Dashboard de métricas** em tempo real
@@ -51,16 +52,19 @@ dotnet build
 ## Uso
 
 ### Ajuda e Opções Disponíveis
+
 ```bash
 dotnet run -- --help
 ```
 
 ### Execução básica (usando config.yaml padrão)
+
 ```bash
 dotnet run
 ```
 
 ### Execução com arquivo de configuração customizado
+
 ```bash
 dotnet run -- --config /caminho/para/config.yaml
 # ou forma curta
@@ -68,6 +72,7 @@ dotnet run -- -c /caminho/para/config.yaml
 ```
 
 ### Sobrescrever configurações via argumentos
+
 ```bash
 # Sobrescrever arquivo CSV de entrada
 dotnet run -- --input data/outro-arquivo.csv
@@ -88,6 +93,7 @@ dotnet run -- --verbose
 ```
 
 ### Execução do executável compilado
+
 ```bash
 ./bin/Debug/net10.0/CsvToApi --help
 ./bin/Debug/net10.0/CsvToApi --config /caminho/para/config.yaml
@@ -115,32 +121,38 @@ Todos os argumentos são opcionais e sobrescrevem as configurações do arquivo 
 ### Exemplos Práticos
 
 **Processar arquivo diferente mantendo outras configurações:**
+
 ```bash
 dotnet run -- -i data/clientes-2024.csv -v
 ```
 
 **Usar endpoint específico:**
+
 ```bash
 dotnet run -- --endpoint-name producao -v
 ```
 
 **Teste rápido com lotes pequenos:**
+
 ```bash
 dotnet run -- -b 10 -v
 ```
 
 **Processar arquivo com delimitador ponto-e-vírgula:**
+
 ```bash
 dotnet run -- -i data/export.csv -d ";" -v
 ```
 
 **Continuar processamento a partir de uma linha específica:**
+
 ```bash
 # Útil para retomar processamento após falha
 dotnet run -- -i data/vendas.csv -s 1001 -v
 ```
 
 **Processar apenas as primeiras N linhas (útil para testes):**
+
 ```bash
 # Processar apenas as primeiras 100 linhas
 dotnet run -- -i data/vendas.csv -n 100 -v
@@ -150,6 +162,7 @@ dotnet run -- -i data/vendas.csv -s 101 -n 100 -v
 ```
 
 **Modo Dry-Run (teste sem requisições reais):**
+
 ```bash
 # Validar configuração e dados sem fazer chamadas HTTP
 dotnet run -- --dry-run -v
@@ -157,6 +170,7 @@ dotnet run -- --test -v
 ```
 
 **Execution ID e Checkpoints:**
+
 ```bash
 # Nova execução (gera UUID automaticamente)
 dotnet run
@@ -242,6 +256,7 @@ Você pode configurar headers HTTP customizados para cada endpoint. Isso permite
 - **Content-Type**: Se não especificado, usa `application/json` por padrão
 
 **Exemplo:**
+
 ```yaml
 endpoints:
   - name: "producao"
@@ -315,11 +330,13 @@ dotnet run -- --endpoint-name webhook1
 Configure `endpointColumnName` no YAML e adicione uma coluna no CSV:
 
 **config.yaml:**
+
 ```yaml
 endpointColumnName: "Endpoint"
 ```
 
 **input.csv:**
+
 ```csv
 Name,Email,Endpoint
 John Doe,john@example.com,webhook1
@@ -334,6 +351,7 @@ Cada linha será enviada para o endpoint especificado na coluna.
 Configure `defaultEndpoint` no YAML:
 
 **config.yaml:**
+
 ```yaml
 defaultEndpoint: "webhook1"
 ```
@@ -345,23 +363,27 @@ Se houver apenas um endpoint configurado e nenhum dos anteriores estiver definid
 ### Exemplos Práticos
 
 **Processar todas as linhas usando webhook1:**
+
 ```bash
 dotnet run -- --endpoint-name webhook1
 ```
 
 **Processar com seleção dinâmica via CSV:**
+
 ```bash
 dotnet run -- --config config.yaml
 # Cada linha define seu endpoint na coluna "Endpoint"
 ```
 
 **Combinar: usar endpoint via argumento sobrescreve CSV:**
+
 ```bash
 dotnet run -- --endpoint-name webhook2
 # Ignora a coluna "Endpoint" do CSV e usa webhook2 para tudo
 ```
 
 **Usar endpoint padrão:**
+
 ```bash
 dotnet run
 # Usa o endpoint definido em 'defaultEndpoint'
@@ -370,12 +392,14 @@ dotnet run
 ## Formato do Arquivo de Log
 
 Quando ocorrem erros, o arquivo de log contém:
+
 - **LineNumber**: Número da linha no arquivo CSV original
 - **Todas as colunas do CSV original**: Valores exatos da linha com erro
 - **HttpCode**: Código HTTP do erro (400 para validação, 500 para exceções)
 - **ErrorMessage**: Descrição do erro
 
 Exemplo:
+
 ```csv
 LineNumber,Name,Email,Street,Birthdate,HttpCode,ErrorMessage
 5,John Doe,invalid-email,123 Main St,1990-05-15,400,"Valor 'invalid-email' inválido para coluna 'Email'"
@@ -408,7 +432,7 @@ A aplicação foi otimizada para processar grandes volumes de dados:
 
 - **type: "string"**: Qualquer texto
 - **type: "date"**: Valida formato de data
-  - format: "YYYY-MM-DD", "DD/MM/YYYY", etc.
+    - format: "YYYY-MM-DD", "DD/MM/YYYY", etc.
 - **regex**: Validação com expressão regular customizada
 
 ## Exemplos de Payload da API
@@ -450,7 +474,8 @@ No mapeamento da API, você pode usar:
 
 ## Filtros de Dados
 
-O sistema permite filtrar as linhas do CSV antes do processamento, processando apenas registros que atendem a critérios específicos. Os filtros são configurados **diretamente em cada coluna**.
+O sistema permite filtrar as linhas do CSV antes do processamento, processando apenas registros que atendem a critérios
+específicos. Os filtros são configurados **diretamente em cada coluna**.
 
 ### Exemplo de Configuração
 
@@ -479,7 +504,8 @@ file:
 - **Contains**: Valor contém o texto especificado
 - **NotContains**: Valor não contém o texto especificado
 
-**Documentação completa**: Veja [data/README-FILTROS.md](data/README-FILTROS.md) para exemplos detalhados e casos de uso.
+**Documentação completa**: Veja [data/README-FILTROS.md](data/README-FILTROS.md) para exemplos detalhados e casos de
+uso.
 
 ## Transformações de Dados
 
@@ -488,6 +514,7 @@ A aplicação oferece 20+ transformações que podem ser aplicadas aos dados ant
 ### Transformações Disponíveis
 
 **Texto:**
+
 - `uppercase` - Converte para MAIÚSCULAS
 - `lowercase` - Converte para minúsculas
 - `capitalize` - Primeira letra maiúscula
@@ -495,18 +522,21 @@ A aplicação oferece 20+ transformações que podem ser aplicadas aos dados ant
 - `trim` - Remove espaços nas extremidades
 
 **Limpeza:**
+
 - `remove-spaces` - Remove todos os espaços
 - `remove-accents` - Remove acentos
 - `remove-non-numeric` - Mantém apenas números
 - `remove-non-alphanumeric` - Remove caracteres especiais
 
 **Formatações Brasileiras:**
+
 - `format-cpf` - Formata como 000.000.000-00
 - `format-cnpj` - Formata como 00.000.000/0000-00
 - `format-phone-br` - Formata telefone brasileiro
 - `format-cep` - Formata como 00000-000
 
 **Outras:**
+
 - `slugify` - Converte para URL-friendly
 - `base64-encode` - Codifica em Base64
 - `url-encode` - Codifica para URL
