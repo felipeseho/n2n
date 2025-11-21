@@ -3,10 +3,10 @@ using Spectre.Console;
 
 namespace n2n.Services;
 
-public class DashboardService
+public class DashboardService(
+    MetricsService metricsService, 
+    AppExecutionContext context)
 {
-    private readonly MetricsService _metricsService;
-    private readonly AppExecutionContext _context;
     private readonly List<string> _logMessages = new();
     private readonly int _maxLogMessages = 10;
     
@@ -17,12 +17,6 @@ public class DashboardService
     
     // State
     private bool _isRunning;
-
-    public DashboardService(MetricsService metricsService, AppExecutionContext context)
-    {
-        _metricsService = metricsService;
-        _context = context;
-    }
 
     /// <summary>
     ///     Configura informações da aplicação
@@ -106,7 +100,7 @@ public class DashboardService
     /// </summary>
     private Layout CreateLayout()
     {
-        var metrics = _metricsService.GetMetrics();
+        var metrics = metricsService.GetMetrics();
 
         // Layout principal: Header, Body (2x2), Footer - proporções para fullscreen
         var layout = new Layout("Root")
@@ -179,23 +173,23 @@ public class DashboardService
 
         // Parâmetros de arquivo
         grid.AddRow(new Markup("[underline cyan1]Arquivo:[/]"), new Markup(""));
-        grid.AddRow("  CSV Delimiter:", $"[yellow]'{_context.Configuration.File.CsvDelimiter}'[/]");
-        grid.AddRow("  Batch Lines:", $"[yellow]{_context.Configuration.File.BatchLines:N0}[/]");
-        grid.AddRow("  Start Line:", $"[yellow]{_context.Configuration.File.StartLine:N0}[/]");
+        grid.AddRow("  CSV Delimiter:", $"[yellow]'{context.Configuration.File.CsvDelimiter}'[/]");
+        grid.AddRow("  Batch Lines:", $"[yellow]{context.Configuration.File.BatchLines:N0}[/]");
+        grid.AddRow("  Start Line:", $"[yellow]{context.Configuration.File.StartLine:N0}[/]");
         
-        if (_context.Configuration.File.MaxLines.HasValue)
-            grid.AddRow("  Max Lines:", $"[yellow]{_context.Configuration.File.MaxLines.Value:N0}[/]");
+        if (context.Configuration.File.MaxLines.HasValue)
+            grid.AddRow("  Max Lines:", $"[yellow]{context.Configuration.File.MaxLines.Value:N0}[/]");
         
         grid.AddEmptyRow();
         
         // Parâmetros de checkpoint
         grid.AddRow(new Markup("[underline cyan1]Checkpoint:[/]"), new Markup(""));
-        grid.AddRow("  Directory:", $"[yellow]{_context.Configuration.File.CheckpointDirectory}[/]");
-        grid.AddRow("  Execution ID:", $"[yellow]{_context.ExecutionPaths.ExecutionId}[/]");
+        grid.AddRow("  Directory:", $"[yellow]{context.Configuration.File.CheckpointDirectory}[/]");
+        grid.AddRow("  Execution ID:", $"[yellow]{context.ExecutionPaths.ExecutionId}[/]");
         
         // Verificar se há checkpoint existente
-        var hasCheckpoint = !string.IsNullOrEmpty(_context.ExecutionPaths.CheckpointPath) && 
-                           File.Exists(_context.ExecutionPaths.CheckpointPath);
+        var hasCheckpoint = !string.IsNullOrEmpty(context.ExecutionPaths.CheckpointPath) && 
+                           File.Exists(context.ExecutionPaths.CheckpointPath);
         grid.AddRow("  Status:", hasCheckpoint 
             ? "[green]Continuando execução[/]" 
             : "[cyan1]Nova execução[/]");
@@ -204,10 +198,10 @@ public class DashboardService
         
         // Parâmetros de log
         grid.AddRow(new Markup("[underline cyan1]Logs:[/]"), new Markup(""));
-        grid.AddRow("  Directory:", $"[yellow]{_context.Configuration.File.LogDirectory}[/]");
-        grid.AddRow("  Verbose:", _context.IsVerbose ? "[green]Sim[/]" : "[grey]Não[/]");
+        grid.AddRow("  Directory:", $"[yellow]{context.Configuration.File.LogDirectory}[/]");
+        grid.AddRow("  Verbose:", context.IsVerbose ? "[green]Sim[/]" : "[grey]Não[/]");
         
-        if (_context.IsDryRun)
+        if (context.IsDryRun)
         {
             grid.AddEmptyRow();
             grid.AddRow(new Markup("[yellow]⚠  Modo:[/]"), new Markup("[yellow]DRY RUN[/]"));
@@ -229,7 +223,7 @@ public class DashboardService
             .AddColumn(new GridColumn().NoWrap().PadRight(2))
             .AddColumn();
 
-        var filePath = _context.Configuration.File.InputPath;
+        var filePath = context.Configuration.File.InputPath;
         var fileName = Path.GetFileName(filePath);
         var fileDir = Path.GetDirectoryName(filePath);
         
@@ -244,11 +238,11 @@ public class DashboardService
         }
         
         // Obter total de linhas do MetricsService
-        var metrics = _metricsService.GetMetrics();
+        var metrics = metricsService.GetMetrics();
         grid.AddRow("[cyan1]Total Linhas:[/]", $"[yellow]{metrics.TotalLines:N0}[/]");
 
         // Obter informações de filtros das colunas configuradas
-        var filtersCount = _context.Configuration.File.Columns.Count(c => c.Filter != null);
+        var filtersCount = context.Configuration.File.Columns.Count(c => c.Filter != null);
         if (filtersCount > 0)
         {
             grid.AddEmptyRow();
@@ -277,24 +271,24 @@ public class DashboardService
             .AddColumn(new GridColumn().NoWrap().PadRight(2))
             .AddColumn();
 
-        grid.AddRow("[cyan1]Endpoint:[/]", $"[yellow]{ShortenUrl(_context.ActiveEndpoint.EndpointUrl)}[/]");
-        grid.AddRow("[cyan1]Método:[/]", $"[green]{_context.ActiveEndpoint.Method}[/]");
-        grid.AddRow("[cyan1]Timeout:[/]", $"[yellow]{_context.ActiveEndpoint.RequestTimeout}s[/]");
-        grid.AddRow("[cyan1]Retry:[/]", $"[yellow]{_context.ActiveEndpoint.RetryAttempts}x[/]");
+        grid.AddRow("[cyan1]Endpoint:[/]", $"[yellow]{ShortenUrl(context.ActiveEndpoint.EndpointUrl)}[/]");
+        grid.AddRow("[cyan1]Método:[/]", $"[green]{context.ActiveEndpoint.Method}[/]");
+        grid.AddRow("[cyan1]Timeout:[/]", $"[yellow]{context.ActiveEndpoint.RequestTimeout}s[/]");
+        grid.AddRow("[cyan1]Retry:[/]", $"[yellow]{context.ActiveEndpoint.RetryAttempts}x[/]");
 
-        if (_context.ActiveEndpoint.Headers.Count > 0)
+        if (context.ActiveEndpoint.Headers.Count > 0)
         {
             grid.AddEmptyRow();
             grid.AddRow(new Markup("[underline cyan1]Headers:[/]"), new Markup(""));
             
-            foreach (var header in _context.ActiveEndpoint.Headers.Take(3))
+            foreach (var header in context.ActiveEndpoint.Headers.Take(3))
             {
                 var value = header.Value.Length > 30 ? header.Value.Substring(0, 27) + "..." : header.Value;
                 grid.AddRow($"  {header.Key}:", $"[grey]{value}[/]");
             }
             
-            if (_context.ActiveEndpoint.Headers.Count > 3)
-                grid.AddRow("", $"[grey]... +{_context.ActiveEndpoint.Headers.Count - 3} headers[/]");
+            if (context.ActiveEndpoint.Headers.Count > 3)
+                grid.AddRow("", $"[grey]... +{context.ActiveEndpoint.Headers.Count - 3} headers[/]");
         }
 
         return new Panel(grid)
