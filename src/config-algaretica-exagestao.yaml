@@ -4,7 +4,7 @@ file:
   startLine: 1
   maxLines: 100  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs"  # Diretório onde os logs serão salvos
-  csvDelimiter: ";"
+  csvDelimiter: ","
   checkpointDirectory: "checkpoints"  # Diretório onde os checkpoints serão salvos
   columns:
     - column: "subscription_id"

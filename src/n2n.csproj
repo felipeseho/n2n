@@ -5,7 +5,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>0.8.2</Version>
+        <Version>0.9.0</Version>
         <Title>n2n: De qualquer origem para qualquer destino</Title>
         <Description>A ferramenta definitiva para integrar seus dados. Conecte Arquivos, APIs e Bancos de Dados em fluxos unificados, sem complexidade.</Description>
     </PropertyGroup>
@@ -23,9 +23,6 @@
         <None Update="config-algaretica-exagestao.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-        <None Update="config_brisanet_full.yaml">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
         
         <None Update="config-tim-exacloud.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -38,7 +35,12 @@
         <None Update="config-timempresas-combo.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+
+        <None Update="config-brisanet-full.yaml">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
         
     </ItemGroup>
 
 </Project>
+

@@ -62,21 +62,96 @@ public class DashboardService(
     {
         _isRunning = true;
 
-        // Limpar console para fullscreen
-        AnsiConsole.Clear();
-
-        await AnsiConsole.Live(CreateLayout())
-            .AutoClear(false)
-            .Overflow(VerticalOverflow.Visible)
-            .Cropping(VerticalOverflowCropping.Bottom)
-            .StartAsync(async ctx =>
+        try
+        {
+            // Validar dimensões mínimas do terminal
+            if (!ValidateTerminalSize())
             {
+                AnsiConsole.MarkupLine("[yellow]⚠️  Terminal muito pequeno para dashboard visual. Usando modo texto.[/]");
+                AnsiConsole.MarkupLine("[grey]Para dashboard completo, use terminal de no mínimo 80x25[/]");
+                AnsiConsole.WriteLine();
+                
+                // Modo texto simples para terminais pequenos
                 while (_isRunning && !cancellationToken.IsCancellationRequested)
                 {
-                    ctx.UpdateTarget(CreateLayout());
+                    try
+                    {
+                        ShowSimpleSummary();
+                        await Task.Delay(2000, cancellationToken); // Atualizar a cada 2 segundos
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch
+                    {
+                        // Ignorar erros e continuar
+                    }
+                }
+                return;
+            }
+
+            // Limpar console para fullscreen
+            AnsiConsole.Clear();
+
+            await AnsiConsole.Live(CreateLayout())
+                .AutoClear(false)
+                .Overflow(VerticalOverflow.Visible)
+                .Cropping(VerticalOverflowCropping.Bottom)
+                .StartAsync(async ctx =>
+                {
+                while (_isRunning && !cancellationToken.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var layout = CreateLayout();
+                        ctx.UpdateTarget(layout);
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        // Terminal redimensionado durante execução - ignorar este frame
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log erro mas continua
+                        _logMessages.Add($"[red]Erro ao atualizar dashboard: {ex.Message}[/]");
+                    }
+                    
                     await Task.Delay(500, cancellationToken); // Atualizar a cada 500ms
                 }
-            });
+                });
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Erro ao iniciar dashboard: {ex.Message}[/]");
+            AnsiConsole.MarkupLine("[grey]Continuando processamento sem dashboard...[/]");
+            
+            // Continuar sem dashboard
+            while (_isRunning && !cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(1000, cancellationToken);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Valida se o terminal tem dimensões mínimas adequadas
+    /// </summary>
+    private bool ValidateTerminalSize()
+    {
+        try
+        {
+            var width = Console.WindowWidth;
+            var height = Console.WindowHeight;
+            
+            // Mínimo recomendado: 80x25 (padrão de terminal)
+            return width >= 80 && height >= 25;
+        }
+        catch
+        {
+            // Se não conseguir obter dimensões, assume que não pode usar dashboard
+            return false;
+        }
     }
 
     /// <summary>
@@ -92,8 +167,51 @@ public class DashboardService(
     /// </summary>
     public void UpdateOnce()
     {
-        AnsiConsole.Clear();
-        AnsiConsole.Write(CreateLayout());
+        try
+        {
+            // Validar dimensões mínimas do terminal
+            if (!ValidateTerminalSize())
+            {
+                // Exibir resumo simples ao invés do dashboard completo
+                ShowSimpleSummary();
+                return;
+            }
+
+            AnsiConsole.Clear();
+            AnsiConsole.Write(CreateLayout());
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Fallback para modo simples
+            ShowSimpleSummary();
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[red]Erro ao atualizar dashboard: {ex.Message}[/]");
+            ShowSimpleSummary();
+        }
+    }
+    
+    /// <summary>
+    ///     Exibe resumo simples para terminais pequenos
+    /// </summary>
+    private void ShowSimpleSummary()
+    {
+        var metrics = metricsService.GetMetrics();
+        
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[cyan1]═══ Processamento CSV ═══[/]");
+        AnsiConsole.MarkupLine($"[grey]Progresso:[/] {metrics.ProgressPercentage:F1}% ([yellow]{metrics.ProcessedLines:N0}[/] / [grey]{metrics.TotalLines:N0}[/])");
+        AnsiConsole.MarkupLine($"[green]✅ Sucessos:[/] {metrics.SuccessCount:N0} ({metrics.SuccessRate:F1}%)");
+        AnsiConsole.MarkupLine($"[red]❌ Erros:[/] {metrics.ErrorCount:N0} ({metrics.ErrorRate:F1}%)");
+        AnsiConsole.MarkupLine($"[cyan1]⏱️  Tempo:[/] {FormatTimeSpan(metrics.ElapsedTime)} | [green]🚀 {metrics.LinesPerSecond:F1}[/] linhas/s");
+        
+        if (_logMessages.Count > 0)
+        {
+            AnsiConsole.MarkupLine($"[grey]Último log:[/] {_logMessages.Last()}");
+        }
+        
+        AnsiConsole.WriteLine();
     }
 
     /// <summary>
@@ -277,25 +395,27 @@ public class DashboardService(
             .AddColumn(new GridColumn().NoWrap().PadRight(2))
             .AddColumn();
 
-        grid.AddRow("[cyan1]Url:[/]", $"[yellow]{ShortenUrl(context.ActiveEndpoint.EndpointUrl)}[/]");
-        grid.AddRow("[cyan1]Método:[/]", $"[green]{context.ActiveEndpoint.Method}[/]");
-        grid.AddRow("[cyan1]Timeout:[/]", $"[yellow]{context.ActiveEndpoint.RequestTimeout}s[/]");
-        grid.AddRow("[cyan1]Tentativas:[/]", $"[yellow]{context.ActiveEndpoint.RetryAttempts}x[/]");
-        grid.AddRow("[cyan1]Atraso entre Tentativas:[/]", $"[yellow]{context.ActiveEndpoint.RetryDelaySeconds}s[/]");
+        var endpoint = context.ActiveEndpoint;
 
-        if (context.ActiveEndpoint.Headers.Count > 0)
+        grid.AddRow("[cyan1]Url:[/]", $"[yellow]{ShortenUrl(endpoint.EndpointUrl)}[/]");
+        grid.AddRow("[cyan1]Método:[/]", $"[green]{endpoint.Method}[/]");
+        grid.AddRow("[cyan1]Timeout:[/]", $"[yellow]{endpoint.RequestTimeout}s[/]");
+        grid.AddRow("[cyan1]Tentativas:[/]", $"[yellow]{endpoint.RetryAttempts}x[/]");
+        grid.AddRow("[cyan1]Atraso entre Tentativas:[/]", $"[yellow]{endpoint.RetryDelaySeconds}s[/]");
+
+        if (endpoint.Headers.Count > 0)
         {
             grid.AddEmptyRow();
             grid.AddRow(new Markup("[underline cyan1]Headers:[/]"), new Markup(""));
             
-            foreach (var header in context.ActiveEndpoint.Headers.Take(3))
+            foreach (var header in endpoint.Headers.Take(3))
             {
                 var value = header.Value.Length > 30 ? header.Value.Substring(0, 27) + "..." : header.Value;
                 grid.AddRow($"  {header.Key}:", $"[grey]{value}[/]");
             }
             
-            if (context.ActiveEndpoint.Headers.Count > 3)
-                grid.AddRow("", $"[grey]... +{context.ActiveEndpoint.Headers.Count - 3} headers[/]");
+            if (endpoint.Headers.Count > 3)
+                grid.AddRow("", $"[grey]... +{endpoint.Headers.Count - 3} headers[/]");
         }
 
         return new Panel(grid)
@@ -343,9 +463,12 @@ public class DashboardService(
         // Barra de progresso visual
         var percentage = metrics.ProgressPercentage;
         var barWidth = 35;
-        var filledWidth = (int)(barWidth * percentage / 100);
-        var emptyWidth = barWidth - filledWidth;
-        var bar = $"[green]{"█".PadRight(filledWidth, '█')}[/][grey]{"░".PadRight(emptyWidth, '░')}[/]";
+        var filledWidth = Math.Max(0, Math.Min(barWidth, (int)(barWidth * percentage / 100)));
+        var emptyWidth = Math.Max(0, barWidth - filledWidth);
+        
+        var filledBar = filledWidth > 0 ? new string('█', filledWidth) : "";
+        var emptyBar = emptyWidth > 0 ? new string('░', emptyWidth) : "";
+        var bar = $"[green]{filledBar}[/][grey]{emptyBar}[/]";
 
         grid.AddRow(new Markup($"{bar} [yellow]{percentage:F1}%[/]").Centered());
         grid.AddEmptyRow();

@@ -5,6 +5,46 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.9.0] - 2025-11-24
+
+### Adicionado
+
+- **Modo Fallback para Terminais Pequenos**: Sistema adaptativo que detecta automaticamente o tamanho do terminal
+  - Validação automática de dimensões mínimas (80x25)
+  - Modo texto simples para terminais com altura inferior a 25 linhas
+  - Resumo compacto mostrando métricas essenciais: progresso, sucessos, erros, tempo e velocidade
+  - Exibição do último log para acompanhamento
+
+### Melhorado
+
+- **Robustez do Dashboard**: Sistema de renderização mais resiliente e tolerante a falhas
+  - Tratamento robusto de exceções `ArgumentOutOfRangeException`
+  - Proteção contra valores nulos em todos os painéis
+  - Try-catch em métodos `StartLiveDashboard()` e `UpdateOnce()`
+  - Fallback automático para modo simples em caso de erros de renderização
+  - Validação de largura de barras de progresso (evita valores negativos)
+  - Dashboard funcional em qualquer tamanho de terminal
+
+- **Experiência do Usuário**:
+  - Mensagens claras quando o terminal é muito pequeno
+  - Orientação sobre dimensões mínimas recomendadas
+  - Continuidade do processamento mesmo com dashboard desabilitado
+  - Atualização menos frequente no modo texto (2s vs 500ms) para melhor legibilidade
+
+### Corrigido
+
+- Crash `ArgumentOutOfRangeException` ao renderizar dashboard em terminais pequenos
+- Erro ao calcular largura de barras de progresso com valores negativos
+- Falhas de renderização quando terminal é redimensionado durante execução
+- NullReferenceException em painéis quando métricas ainda não foram inicializadas
+
+### Técnico
+
+- Adicionado método `ValidateTerminalSize()` no `DashboardService`
+- Adicionado método `ShowSimpleSummary()` para modo texto compacto
+- Proteção com `Math.Max()` e `Math.Min()` em cálculos de dimensões
+- Verificações de nullable em todas as propriedades de métricas e configurações
+
 ## [0.8.2] - 2025-11-22
 
 ### Modificado

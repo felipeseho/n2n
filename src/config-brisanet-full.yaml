@@ -1,5 +1,5 @@
 file:
-  inputPath: "/users/felipeseho/Desktop/bases/brisanet-full.csv"
+  inputPath: "/Users/felipeseho/Desktop/bases/parceiro-brisanet-2025-11-18.csv"
   batchLines: 200
   startLine: 1
   # maxLines: 50  # Opcional: limita o número de linhas a processar (útil para testes)
