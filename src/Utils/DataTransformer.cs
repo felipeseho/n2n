@@ -15,7 +15,7 @@ public static class DataTransformer
     /// <param name="value">Valor original</param>
     /// <param name="transform">Tipo de transformação a aplicar</param>
     /// <returns>Valor transformado</returns>
-    public static string ApplyTransformation(string value, string? transform)
+    public static string? ApplyTransformation(string value, string? transform)
     {
         if (string.IsNullOrWhiteSpace(transform)) return value;
 
@@ -39,6 +39,7 @@ public static class DataTransformer
             "reverse" => new string(value.Reverse().ToArray()),
             "base64-encode" => Convert.ToBase64String(Encoding.UTF8.GetBytes(value)),
             "url-encode" => Uri.EscapeDataString(value),
+            "empty-to-null" => string.IsNullOrWhiteSpace(value) ? null : value,
             _ when transform.StartsWith("date-format:") =>
                 DateFormat(value, transform.Substring("date-format:".Length)),
             _ => value

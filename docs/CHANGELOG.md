@@ -5,6 +5,15 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.9.1] - 2025-11-24
+
+### Adicionado
+
+- **Nova transformação `empty-to-null`**: Converte valores vazios (strings em branco ou apenas espaços) em `null`
+  - Útil para APIs que diferenciam valores vazios de valores nulos
+  - Aplica trim antes de verificar se está vazio
+  - Integrado ao sistema de transformações existente
+
 ## [0.9.0] - 2025-11-24
 
 ### Adicionado
