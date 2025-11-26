@@ -6,62 +6,78 @@ using Spectre.Console;
 namespace n2n.Services;
 
 /// <summary>
-///     Serviço de dashboard para múltiplas origens e destinos
+///     Serviço de dashboard interativo usando Spectre.Console Layout
 /// </summary>
 public class PipelineDashboardService
 {
-    private readonly List<string> _logMessages = new();
-    private readonly object _logMessagesLock = new();
-    private readonly int _maxLogMessages = 10;
-    private readonly string _appName = Assembly.GetExecutingAssembly().GetName().Name!;
-    private readonly string _appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString()!;
-    private readonly PipelineConfiguration _configuration;
-    private IDataSource? _source;
-    private long? _estimatedTotal;
-    private IDataDestination? _destination;
+    private readonly DashboardViewModel _viewModel;
     private bool _isRunning;
 
     public PipelineDashboardService(PipelineConfiguration configuration)
     {
-        _configuration = configuration;
+        var appName = Assembly.GetExecutingAssembly().GetName().Name!;
+        var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString()!;
+
+        _viewModel = new DashboardViewModel
+        {
+            ApplicationName = appName,
+            ApplicationVersion = appVersion,
+            ExecutionName = configuration.Name,
+            ExecutionDescription = configuration.Description ?? string.Empty,
+            Configuration = configuration
+        };
     }
 
-    public void SetSource(IDataSource source) => _source = source;
-    public void SetDestination(IDataDestination destination) => _destination = destination;
-    public void SetEstimatedTotal(long? total) => _estimatedTotal = total;
+    public void SetSource(IDataSource source) => _viewModel.Source = source;
+    public void SetDestination(IDataDestination destination) => _viewModel.Destination = destination;
+    public void SetEstimatedTotal(long? total) => _viewModel.EstimatedTotal = total;
+    public void SetExecutionId(string executionId) => _viewModel.ExecutionId = executionId;
 
     public void AddLogMessage(string message, string level = "INFO")
     {
-        var timestamp = DateTime.Now.ToString("HH:mm:ss");
-        var color = level.ToUpper() switch
+        var logLevel = level.ToUpper() switch
         {
-            "ERROR" => "red",
-            "WARNING" => "yellow",
-            "SUCCESS" => "green",
-            "INFO" => "cyan1",
-            _ => "grey"
+            "ERROR" => LogLevel.Error,
+            "WARNING" => LogLevel.Warning,
+            "SUCCESS" => LogLevel.Success,
+            "INFO" => LogLevel.Info,
+            _ => LogLevel.Debug
         };
 
-        var levelIcon = level.ToUpper() switch
+        _viewModel.AddGlobalLog(message, logLevel);
+    }
+
+    public void AddSourceLog(string message, string level = "INFO")
+    {
+        var logLevel = level.ToUpper() switch
         {
-            "ERROR" => "❌",
-            "WARNING" => "⚠️",
-            "SUCCESS" => "✅",
-            "INFO" => "ℹ️ ",
-            _ => "."
+            "ERROR" => LogLevel.Error,
+            "WARNING" => LogLevel.Warning,
+            "SUCCESS" => LogLevel.Success,
+            "INFO" => LogLevel.Info,
+            _ => LogLevel.Debug
         };
 
-        var formattedMessage = $"[grey]{timestamp}[/] [{color}]{levelIcon}[/] {message}";
-        
-        lock (_logMessagesLock)
-        {
-            _logMessages.Add(formattedMessage);
+        _viewModel.AddSourceLog(message, logLevel);
+    }
 
-            if (_logMessages.Count > _maxLogMessages)
-            {
-                _logMessages.RemoveAt(0);
-            }
-        }
+    public void AddDestinationLog(string message, string level = "INFO")
+    {
+        var logLevel = level.ToUpper() switch
+        {
+            "ERROR" => LogLevel.Error,
+            "WARNING" => LogLevel.Warning,
+            "SUCCESS" => LogLevel.Success,
+            "INFO" => LogLevel.Info,
+            _ => LogLevel.Debug
+        };
+
+        _viewModel.AddDestinationLog(message, logLevel);
+    }
+
+    public void SetStatus(DashboardStatus status)
+    {
+        _viewModel.Status = status;
     }
 
     public async Task StartLiveDashboard(CancellationToken cancellationToken)
@@ -73,7 +89,7 @@ public class PipelineDashboardService
             if (!ValidateTerminalSize())
             {
                 AnsiConsole.MarkupLine(
-                    "[yellow]⚠️  Terminal pequeno. Use terminal de no mínimo 80x25 para dashboard completo.[/]");
+                    "[yellow]⚠️  Terminal pequeno. Use terminal de no mínimo 100x30 para dashboard completo.[/]");
                 AnsiConsole.WriteLine();
 
                 while (_isRunning && !cancellationToken.IsCancellationRequested)
@@ -151,7 +167,7 @@ public class PipelineDashboardService
     {
         try
         {
-            return Console.WindowWidth >= 80 && Console.WindowHeight >= 25;
+            return Console.WindowWidth >= 100 && Console.WindowHeight >= 30;
         }
         catch
         {
@@ -161,32 +177,30 @@ public class PipelineDashboardService
 
     private void ShowSimpleSummary()
     {
-        var sourceMetrics = _source?.GetMetrics();
-        var destMetrics = _destination?.GetMetrics();
+        var sourceMetrics = _viewModel.Source?.GetMetrics();
+        var destMetrics = _viewModel.Destination?.GetMetrics();
 
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine($"[cyan1]═══ Pipeline: {_configuration.Name} ═══[/]");
+        AnsiConsole.MarkupLine($"[cyan1]═══ Pipeline: {_viewModel.ExecutionName} ═══[/]");
 
         if (sourceMetrics != null)
         {
             AnsiConsole.MarkupLine(
-                $"[cyan1]Origem ({_configuration.Source.Type}):[/] {sourceMetrics.TotalRecordsRead:N0} lidos");
+                $"[cyan1]Origem ({_viewModel.Configuration.Source.Type}):[/] {sourceMetrics.TotalRecordsRead:N0} lidos");
         }
 
         if (destMetrics != null)
         {
             AnsiConsole.MarkupLine(
-                $"[cyan1]Destino ({_configuration.Destination.Type}):[/] {destMetrics.TotalRecordsWritten:N0} escritos");
+                $"[cyan1]Destino ({_viewModel.Configuration.Destination.Type}):[/] {destMetrics.TotalRecordsWritten:N0} escritos");
             AnsiConsole.MarkupLine(
                 $"[green]✅ Sucessos:[/] {destMetrics.SuccessCount:N0} | [red]❌ Erros:[/] {destMetrics.ErrorCount:N0}");
         }
 
-        lock (_logMessagesLock)
+        var globalLogs = _viewModel.GetGlobalLogs();
+        if (globalLogs.Length > 0)
         {
-            if (_logMessages.Count > 0)
-            {
-                AnsiConsole.MarkupLine($"[grey]Último log:[/] {_logMessages.Last()}");
-            }
+            AnsiConsole.MarkupLine($"[grey]Último log:[/] {globalLogs.Last()}");
         }
 
         AnsiConsole.WriteLine();
@@ -194,134 +208,301 @@ public class PipelineDashboardService
 
     private Layout CreateLayout()
     {
+        // Estrutura: Header | Body (Source | Destination) | Footer
         var layout = new Layout("Root")
             .SplitRows(
-                new Layout("Header").Size(5),
+                new Layout("Header").Size(7),
                 new Layout("Body"),
-                new Layout("Footer").Size(13)
+                new Layout("Footer").Size(12)
             );
 
+        // Header
         layout["Header"].Update(CreateHeaderPanel());
 
-        layout["Body"].SplitRows(
-            new Layout("Row1"),
-            new Layout("Row2")
+        // Body dividido verticalmente: Esquerda (Source) | Direita (Destination)
+        layout["Body"].SplitColumns(
+            new Layout("Source"),
+            new Layout("Dest")
         );
 
-        layout["Body"]["Row1"].SplitColumns(
-            new Layout("Source").Ratio(1),
-            new Layout("Processing").Ratio(1)
-        );
+        layout["Body"]["Source"].Update(CreateSourcePanel());
+        layout["Body"]["Dest"].Update(CreateDestinationPanel());
 
-        layout["Body"]["Row1"]["Source"].Update(CreateSourcePanel());
-        layout["Body"]["Row1"]["Processing"].Update(CreateProcessingPanel());
-
-        layout["Body"]["Row2"].SplitColumns(
-            new Layout("Destination").Ratio(1),
-            new Layout("Progress").Ratio(1)
-        );
-
-        layout["Body"]["Row2"]["Destination"].Update(CreateDestinationPanel());
-        layout["Body"]["Row2"]["Progress"].Update(CreateProgressPanel(_estimatedTotal));
-
-        layout["Footer"].Update(CreateLogsPanel());
+        // Footer
+        layout["Footer"].Update(CreateFooterPanel());
 
         return layout;
     }
 
     private Panel CreateHeaderPanel()
     {
-        var grid = new Grid()
-            .AddColumn(new GridColumn().LeftAligned());
-
-        grid.AddRow(new Markup($"[bold cyan1]{_appName}[/] - Pipeline: [yellow]{_configuration.Name}[/]"));
-        if (!string.IsNullOrWhiteSpace(_configuration.Description))
+        var statusIcon = _viewModel.Status switch
         {
-            grid.AddRow(new Markup($"[grey]{_configuration.Description}[/]"));
+            DashboardStatus.Running => "[yellow]●[/]",
+            DashboardStatus.Completed => "[green]✓[/]",
+            DashboardStatus.Error => "[red]✗[/]",
+            DashboardStatus.Paused => "[grey]⏸[/]",
+            _ => "[grey]○[/]"
+        };
+
+        var statusText = _viewModel.Status switch
+        {
+            DashboardStatus.Running => "[yellow]Em Andamento[/]",
+            DashboardStatus.Completed => "[green]Concluído[/]",
+            DashboardStatus.Error => "[red]Erro[/]",
+            DashboardStatus.Paused => "[grey]Pausado[/]",
+            _ => "[grey]Desconhecido[/]"
+        };
+
+        var metadataTable = new Table()
+            .Border(TableBorder.None)
+            .HideHeaders()
+            .AddColumn(new TableColumn("Key").NoWrap())
+            .AddColumn(new TableColumn("Value"));
+
+        metadataTable.AddRow(
+            "[cyan1]Aplicação:[/]",
+            $"[white]{_viewModel.ApplicationName}[/] [grey](v{_viewModel.ApplicationVersion})[/]"
+        );
+
+        metadataTable.AddRow(
+            "[cyan1]Execução:[/]",
+            $"[yellow]{_viewModel.ExecutionName}[/]" +
+            (!string.IsNullOrWhiteSpace(_viewModel.ExecutionDescription)
+                ? $" [grey]- {_viewModel.ExecutionDescription}[/]"
+                : "")
+        );
+
+        if (!string.IsNullOrWhiteSpace(_viewModel.ExecutionId))
+        {
+            metadataTable.AddRow(
+                "[cyan1]ID:[/]",
+                $"[grey]{_viewModel.ExecutionId}[/]"
+            );
         }
 
-        grid.AddRow(new Markup($"[grey]Versão {_appVersion}[/]"));
+        metadataTable.AddRow(
+            "[cyan1]Status:[/]",
+            $"{statusIcon} {statusText}"
+        );
 
-        return new Panel(grid)
+        return new Panel(metadataTable)
+            .Header("[bold cyan1]═══ PIPELINE DATA INTEGRATION ═══[/]", Justify.Center)
             .BorderColor(Color.Cyan1)
-            .Padding(0, 0)
+            .Padding(1, 0)
             .Expand();
     }
 
     private Panel CreateSourcePanel()
     {
-        var grid = new Grid()
-            .AddColumn(new GridColumn().NoWrap().PadRight(2))
-            .AddColumn();
+        var mainGrid = new Grid()
+            .AddColumn(new GridColumn());
 
-        grid.AddRow("[cyan1]Tipo:[/]", $"[yellow]{_configuration.Source.Type}[/]");
+        // === CONFIGURAÇÕES ===
+        var configTable = new Table()
+            .Border(TableBorder.None)
+            .HideHeaders()
+            .AddColumn(new TableColumn("Key").NoWrap())
+            .AddColumn(new TableColumn("Value"));
 
-        var sourceMetrics = _source?.GetMetrics();
-        if (sourceMetrics != null)
-        {
-            grid.AddRow("[cyan1]Lidos:[/]", $"[yellow]{sourceMetrics.TotalRecordsRead:N0}[/]");
-            grid.AddRow("[cyan1]Filtrados:[/]", $"[grey]{sourceMetrics.FilteredRecords:N0}[/]");
-            grid.AddRow("[cyan1]Tempo:[/]", $"[yellow]{FormatTimeSpan(sourceMetrics.ElapsedTime)}[/]");
-            grid.AddRow("[cyan1]Velocidade:[/]", $"[green]{sourceMetrics.RecordsPerSecond:F1}[/] rec/s");
+        configTable.AddRow("[cyan1]Tipo:[/]", $"[yellow]{_viewModel.Configuration.Source.Type}[/]");
 
-            // Métricas customizadas
-            if (sourceMetrics.CustomMetrics.Count > 0)
-            {
-                grid.AddEmptyRow();
-                grid.AddRow(new Markup("[underline cyan1]Métricas:[/]"), new Markup(""));
-                foreach (var metric in sourceMetrics.CustomMetrics.Take(3))
-                {
-                    grid.AddRow($"  {metric.Key}:", $"[grey]{metric.Value}[/]");
-                }
-            }
-        }
-
-        // Configurações da origem
-        grid.AddEmptyRow();
-        grid.AddRow(new Markup("[underline cyan1]Configuração:[/]"), new Markup(""));
-        foreach (var setting in _configuration.Source.Settings.Take(5))
+        foreach (var setting in _viewModel.Configuration.Source.Settings.Take(3))
         {
             var value = setting.Value?.ToString() ?? "null";
-            if (value.Length > 30) value = value.Substring(0, 27) + "...";
-            grid.AddRow($"  {setting.Key}:", $"[grey]{value}[/]");
+            configTable.AddRow($"  [grey]{setting.Key}:[/]", $"[white]{value}[/]");
         }
 
-        return new Panel(grid)
-            .Header($"[bold cyan1]📥 ORIGEM[/]", Justify.Center)
+        mainGrid.AddRow(new Panel(configTable)
+            .Header("[underline cyan1]⚙️  Configurações[/]", Justify.Left)
+            .Border(BoxBorder.Rounded)
             .BorderColor(Color.Blue)
-            .Padding(0, 0)
+            .Padding(0, 0));
+
+        mainGrid.AddEmptyRow();
+
+        // === PERFORMANCE ===
+        var sourceMetrics = _viewModel.Source?.GetMetrics();
+        var perfTable = new Table()
+            .Border(TableBorder.None)
+            .HideHeaders()
+            .AddColumn(new TableColumn("Key").NoWrap())
+            .AddColumn(new TableColumn("Value"));
+
+        if (sourceMetrics != null)
+        {
+            perfTable.AddRow("[cyan1]Registros Lidos:[/]", $"[yellow]{sourceMetrics.TotalRecordsRead:N0}[/]");
+            perfTable.AddRow("[cyan1]Filtrados:[/]", $"[grey]{sourceMetrics.FilteredRecords:N0}[/]");
+            perfTable.AddRow("[cyan1]Tempo Decorrido:[/]", $"[yellow]{FormatTimeSpan(sourceMetrics.ElapsedTime)}[/]");
+            perfTable.AddRow("[cyan1]Taxa de Leitura:[/]", $"[green]{sourceMetrics.RecordsPerSecond:F1}[/] rec/s");
+
+            if (sourceMetrics.BytesRead > 0)
+            {
+                var mb = sourceMetrics.BytesRead / 1024.0 / 1024.0;
+                perfTable.AddRow("[cyan1]Bytes Lidos:[/]", $"[grey]{mb:F2}[/] MB");
+            }
+        }
+        else
+        {
+            perfTable.AddRow("[grey]Aguardando dados...[/]", "");
+        }
+
+        mainGrid.AddRow(new Panel(perfTable)
+            .Header("[underline cyan1]📊 Performance[/]", Justify.Left)
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Blue)
+            .Padding(0, 0));
+
+        mainGrid.AddEmptyRow();
+
+        // === PROGRESSO ===
+        var progressGrid = new Grid().AddColumn();
+
+        if (sourceMetrics != null && _viewModel.EstimatedTotal.HasValue)
+        {
+            var read = sourceMetrics.TotalRecordsRead;
+            var total = _viewModel.EstimatedTotal.Value;
+            var percentage = total > 0 ? (read * 100.0 / total) : 0;
+
+            var barWidth = 30;
+            var filledWidth = Math.Max(0, Math.Min(barWidth, (int)(barWidth * percentage / 100)));
+            var emptyWidth = Math.Max(0, barWidth - filledWidth);
+
+            var bar = $"[blue]{new string('█', filledWidth)}[/][grey]{new string('░', emptyWidth)}[/]";
+            progressGrid.AddRow(new Markup($"{bar} [yellow]{percentage:F1}%[/]"));
+            progressGrid.AddRow(new Markup($"[grey]{read:N0} / {total:N0}[/]"));
+            
+            // Tempo estimado
+            if (sourceMetrics.RecordsPerSecond > 0 && read < total)
+            {
+                var remaining = total - read;
+                var secondsRemaining = remaining / sourceMetrics.RecordsPerSecond;
+                var etaTime = FormatTimeSpan(TimeSpan.FromSeconds(secondsRemaining));
+                progressGrid.AddRow(new Markup($"[grey]⏱️  ETA: {etaTime}[/]"));
+            }
+        }
+        else if (sourceMetrics != null)
+        {
+            progressGrid.AddRow(new Markup($"[yellow]{sourceMetrics.TotalRecordsRead:N0}[/] registros lidos"));
+        }
+        else
+        {
+            progressGrid.AddRow(new Markup("[grey]Aguardando início...[/]"));
+        }
+
+        mainGrid.AddRow(new Panel(progressGrid)
+            .Header("[underline cyan1]📈 Progresso[/]", Justify.Left)
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Blue)
+            .Padding(0, 0));
+
+        mainGrid.AddEmptyRow();
+
+        // === FILTROS ===
+        if (_viewModel.Configuration.Filters != null && _viewModel.Configuration.Filters.Count > 0)
+        {
+            var filtersGrid = new Grid().AddColumn();
+            var validFilters = 0;
+            
+            foreach (var filter in _viewModel.Configuration.Filters.Take(5))
+            {
+                if (filter == null) continue;
+                
+                var field = !string.IsNullOrWhiteSpace(filter.Field) ? filter.Field : "(vazio)";
+                var op = !string.IsNullOrWhiteSpace(filter.Operator) ? filter.Operator : "Equals";
+                var value = filter.Value?.ToString();
+                
+                // Pular filtros completamente vazios
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+                
+                filtersGrid.AddRow(new Markup($"[grey]•[/] [yellow]{field}[/] [blue]{op}[/] [white]\"{value}\"[/]"));
+                validFilters++;
+            }
+            
+            if (validFilters == 0)
+            {
+                filtersGrid.AddRow(new Markup("[grey]Nenhum filtro configurado[/]"));
+            }
+            else if (_viewModel.Configuration.Filters.Count > 5)
+            {
+                filtersGrid.AddRow(new Markup($"[grey]... +{_viewModel.Configuration.Filters.Count - 5}[/]"));
+            }
+
+            mainGrid.AddRow(new Panel(filtersGrid)
+                .Header($"[underline cyan1]🔍 Filtros ({_viewModel.Configuration.Filters.Count})[/]", Justify.Left)
+                .Border(BoxBorder.Rounded)
+                .BorderColor(Color.Blue)
+                .Padding(0, 0));
+
+            mainGrid.AddEmptyRow();
+        }
+
+        return new Panel(mainGrid)
+            .Header("[bold blue]📥 ORIGEM (SOURCE)[/]", Justify.Center)
+            .BorderColor(Color.Blue)
+            .Padding(1, 0)
             .Expand();
     }
 
     private Panel CreateDestinationPanel()
     {
-        var grid = new Grid()
-            .AddColumn(new GridColumn().NoWrap().PadRight(2))
-            .AddColumn();
+        var mainGrid = new Grid()
+            .AddColumn(new GridColumn());
 
-        grid.AddRow("[cyan1]Tipo:[/]", $"[yellow]{_configuration.Destination.Type}[/]");
+        // === CONFIGURAÇÕES ===
+        var configTable = new Table()
+            .Border(TableBorder.None)
+            .HideHeaders()
+            .AddColumn(new TableColumn("Key").NoWrap())
+            .AddColumn(new TableColumn("Value"));
 
-        var destMetrics = _destination?.GetMetrics();
+        configTable.AddRow("[cyan1]Tipo:[/]", $"[yellow]{_viewModel.Configuration.Destination.Type}[/]");
+
+        foreach (var setting in _viewModel.Configuration.Destination.Settings.Take(3))
+        {
+            var value = setting.Value?.ToString() ?? "null";
+            configTable.AddRow($"  [grey]{setting.Key}:[/]", $"[white]{value}[/]");
+        }
+
+        mainGrid.AddRow(new Panel(configTable)
+            .Header("[underline cyan1]⚙️  Configurações[/]", Justify.Left)
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Green)
+            .Padding(0, 0));
+
+        mainGrid.AddEmptyRow();
+
+        // === PERFORMANCE ===
+        var destMetrics = _viewModel.Destination?.GetMetrics();
+        var perfTable = new Table()
+            .Border(TableBorder.None)
+            .HideHeaders()
+            .AddColumn(new TableColumn("Key").NoWrap())
+            .AddColumn(new TableColumn("Value"));
+
         if (destMetrics != null)
         {
-            grid.AddRow("[cyan1]Escritos:[/]", $"[yellow]{destMetrics.TotalRecordsWritten:N0}[/]");
-            grid.AddRow("[green]✅ Sucessos:[/]", $"[green]{destMetrics.SuccessCount:N0}[/]");
-            grid.AddRow("[red]❌ Erros:[/]", $"[red]{destMetrics.ErrorCount:N0}[/]");
-            grid.AddRow("[cyan1]Tentativas:[/]", $"[yellow]{destMetrics.TotalRetries}[/]");
-            grid.AddEmptyRow();
-            grid.AddRow("[cyan1]Resp. Média:[/]", $"[yellow]{destMetrics.AverageResponseTimeMs}[/] ms");
+            perfTable.AddRow("[cyan1]Registros Escritos:[/]", $"[yellow]{destMetrics.TotalRecordsWritten:N0}[/]");
+            perfTable.AddRow("[green]✅ Sucessos:[/]", $"[green]{destMetrics.SuccessCount:N0}[/]");
+            perfTable.AddRow("[red]❌ Erros:[/]", $"[red]{destMetrics.ErrorCount:N0}[/]");
+            perfTable.AddRow("[cyan1]Tentativas:[/]", $"[yellow]{destMetrics.TotalRetries:N0}[/]");
+            perfTable.AddRow("[cyan1]Tempo Decorrido:[/]", $"[yellow]{FormatTimeSpan(destMetrics.ElapsedTime)}[/]");
+            perfTable.AddRow("[cyan1]Taxa de Escrita:[/]", $"[green]{destMetrics.RecordsPerSecond:F1}[/] rec/s");
+            perfTable.AddRow("[cyan1]Tempo Médio:[/]", $"[grey]{destMetrics.AverageResponseTimeMs:F1}[/] ms");
 
             if (destMetrics.MinResponseTimeMs != long.MaxValue)
             {
-                grid.AddRow("[cyan1]Mín / Máx:[/]",
+                perfTable.AddRow("[cyan1]Min / Max:[/]",
                     $"[green]{destMetrics.MinResponseTimeMs}[/] / [red]{destMetrics.MaxResponseTimeMs}[/] ms");
             }
 
-            // Status codes se disponível
+            // HTTP Status Codes
             if (destMetrics.CustomMetrics.TryGetValue("StatusCodes", out var statusCodesObj) &&
-                statusCodesObj is Dictionary<int, long> statusCodes)
+                statusCodesObj is Dictionary<int, long> statusCodes && statusCodes.Any())
             {
-                grid.AddEmptyRow();
                 var statusList = new List<string>();
                 foreach (var kvp in statusCodes.OrderBy(x => x.Key).Take(4))
                 {
@@ -333,134 +514,146 @@ public class PipelineDashboardService
                 if (statusCodes.Count > 4)
                     statusLine += $" [grey]+{statusCodes.Count - 4}[/]";
 
-                grid.AddRow(new Markup($"[grey]HTTP:[/] {statusLine}"));
+                perfTable.AddRow("[cyan1]HTTP Codes:[/]", statusLine);
             }
-        }
-
-        return new Panel(grid)
-            .Header($"[bold cyan1]📤 DESTINO[/]", Justify.Center)
-            .BorderColor(Color.Green)
-            .Padding(0, 0)
-            .Expand();
-    }
-
-    private Panel CreateProcessingPanel()
-    {
-        var grid = new Grid()
-            .AddColumn(new GridColumn().NoWrap().PadRight(2))
-            .AddColumn();
-
-        grid.AddRow("[cyan1]Logs:[/]", $"[grey]{_configuration.Processing.LogDirectory}[/]");
-        grid.AddRow("[cyan1]Checkpoint:[/]", $"[grey]{_configuration.Processing.CheckpointDirectory}[/]");
-
-        if (_configuration.Filters.Count > 0)
-        {
-            grid.AddEmptyRow();
-            grid.AddRow("[cyan1]Filtros:[/]", $"[blue]{_configuration.Filters.Count} ativo(s)[/]");
-        }
-
-        if (_configuration.Transforms.Count > 0)
-        {
-            grid.AddRow("[cyan1]Transformações:[/]", $"[blue]{_configuration.Transforms.Count} ativa(s)[/]");
-        }
-
-        return new Panel(grid)
-            .Header("[bold cyan1]⚙️ PROCESSAMENTO[/]", Justify.Center)
-            .BorderColor(Color.Cyan1)
-            .Padding(0, 0)
-            .Expand();
-    }
-
-    private Panel CreateProgressPanel(long? estimatedTotal)
-    {
-        var grid = new Grid().AddColumn();
-
-        var sourceMetrics = _source?.GetMetrics();
-        var destMetrics = _destination?.GetMetrics();
-
-        if (sourceMetrics != null && destMetrics != null)
-        {
-            var processed = destMetrics.TotalRecordsWritten;
-            var total = estimatedTotal ?? sourceMetrics.TotalRecordsRead;
-            var percentage = total > 0 ? (processed * 100.0 / total) : 0;
-
-            var barWidth = 35;
-            var filledWidth = Math.Max(0, Math.Min(barWidth, (int)(barWidth * percentage / 100)));
-            var emptyWidth = Math.Max(0, barWidth - filledWidth);
-
-            var filledBar = filledWidth > 0 ? new string('█', filledWidth) : "";
-            var emptyBar = emptyWidth > 0 ? new string('░', emptyWidth) : "";
-            var bar = $"[green]{filledBar}[/][grey]{emptyBar}[/]";
-
-            grid.AddRow(new Markup($"{bar} [yellow]{percentage:F1}%[/]").Centered());
-            grid.AddEmptyRow();
-
-            var statsGrid = new Grid()
-                .AddColumn(new GridColumn().NoWrap().PadRight(2))
-                .AddColumn();
-
-            statsGrid.AddRow("[cyan1]Processados:[/]", $"[yellow]{processed:N0}[/] / [grey]{total:N0}[/]");
-
-            var successRate = destMetrics.TotalRecordsWritten > 0
-                ? destMetrics.SuccessCount * 100.0 / destMetrics.TotalRecordsWritten
-                : 0;
-            var errorRate = destMetrics.TotalRecordsWritten > 0
-                ? destMetrics.ErrorCount * 100.0 / destMetrics.TotalRecordsWritten
-                : 0;
-
-            statsGrid.AddRow("[green]✅ Sucessos:[/]",
-                $"[green]{destMetrics.SuccessCount:N0}[/] [grey]({successRate:F1}%)[/]");
-            statsGrid.AddRow("[red]❌ Erros:[/]",
-                $"[red]{destMetrics.ErrorCount:N0}[/] [grey]({errorRate:F1}%)[/]");
-
-            grid.AddRow(statsGrid);
-            grid.AddEmptyRow();
-
-            var timeGrid = new Grid()
-                .AddColumn(new GridColumn().NoWrap().PadRight(2))
-                .AddColumn();
-
-            timeGrid.AddRow("[cyan1]⏱️  Decorrido:[/]", $"[yellow]{FormatTimeSpan(destMetrics.ElapsedTime)}[/]");
-            timeGrid.AddRow("[cyan1]🚀 Velocidade:[/]",
-                $"[green]{destMetrics.RecordsPerSecond:F1}[/] [grey]rec/s[/]");
-
-            grid.AddRow(timeGrid);
         }
         else
         {
-            grid.AddRow(new Markup("[grey]Aguardando dados...[/]"));
+            perfTable.AddRow("[grey]Aguardando dados...[/]", "");
         }
 
-        return new Panel(grid)
-            .Header("[bold cyan1]📊 PROGRESSO[/]", Justify.Center)
-            .BorderColor(Color.Purple)
-            .Padding(0, 0)
+        mainGrid.AddRow(new Panel(perfTable)
+            .Header("[underline cyan1]📊 Performance[/]", Justify.Left)
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Green)
+            .Padding(0, 0));
+
+        mainGrid.AddEmptyRow();
+
+        // === PROGRESSO ===
+        var progressGrid = new Grid().AddColumn();
+        var sourceMetrics = _viewModel.Source?.GetMetrics();
+
+        if (destMetrics != null)
+        {
+            var written = destMetrics.TotalRecordsWritten;
+            var total = _viewModel.EstimatedTotal ?? sourceMetrics?.TotalRecordsRead ?? written;
+            var success = destMetrics.SuccessCount;
+            var errors = destMetrics.ErrorCount;
+
+            // Progresso geral (baseado no total estimado)
+            var overallProgress = total > 0 ? (written * 100.0 / total) : 0;
+
+            // Taxas de sucesso/erro dentro do que foi escrito
+            var successRate = written > 0 ? (success * 100.0 / written) : 0;
+            var errorRate = written > 0 ? (errors * 100.0 / written) : 0;
+
+            var barWidth = 30;
+            
+            // Barra mostra: quantos foram escritos com sucesso, quantos com erro, e quanto falta
+            var successWidth = total > 0 ? Math.Max(0, Math.Min(barWidth, (int)(barWidth * success / total))) : 0;
+            var errorWidth = total > 0 ? Math.Max(0, Math.Min(barWidth - successWidth, (int)(barWidth * errors / total))) : 0;
+            var pendingWidth = Math.Max(0, barWidth - successWidth - errorWidth);
+
+            var bar =
+                $"[green]{new string('█', successWidth)}[/][red]{new string('█', errorWidth)}[/][grey]{new string('░', pendingWidth)}[/]";
+
+            progressGrid.AddRow(new Markup(bar));
+            progressGrid.AddRow(new Markup(
+                $"[yellow]{overallProgress:F1}%[/] concluído | [green]✅ {successRate:F1}%[/] | [red]❌ {errorRate:F1}%[/]"));
+            progressGrid.AddRow(new Markup($"[grey]{written:N0} / {total:N0} registros[/]"));
+            
+            // Tempo estimado
+            if (destMetrics.RecordsPerSecond > 0 && written < total)
+            {
+                var remaining = total - written;
+                var secondsRemaining = remaining / destMetrics.RecordsPerSecond;
+                var etaTime = FormatTimeSpan(TimeSpan.FromSeconds(secondsRemaining));
+                progressGrid.AddRow(new Markup($"[grey]⏱️  ETA: {etaTime}[/]"));
+            }
+        }
+        else
+        {
+            progressGrid.AddRow(new Markup("[grey]Aguardando início...[/]"));
+        }
+
+        mainGrid.AddRow(new Panel(progressGrid)
+            .Header("[underline cyan1]📈 Progresso[/]", Justify.Left)
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Green)
+            .Padding(0, 0));
+
+        mainGrid.AddEmptyRow();
+
+        // === TRANSFORMAÇÕES ===
+        if (_viewModel.Configuration.Transforms != null && _viewModel.Configuration.Transforms.Count > 0)
+        {
+            var transformsGrid = new Grid().AddColumn();
+            var validTransforms = 0;
+            
+            foreach (var transform in _viewModel.Configuration.Transforms.Take(5))
+            {
+                if (transform == null) continue;
+                
+                var transformType = !string.IsNullOrWhiteSpace(transform.Type) ? transform.Type : "(vazio)";
+                var field = !string.IsNullOrWhiteSpace(transform.Field) ? transform.Field : "(vazio)";
+                
+                // Pular transformações completamente vazias
+                if (transformType == "(vazio)" && field == "(vazio)")
+                {
+                    continue;
+                }
+                
+                transformsGrid.AddRow(new Markup($"[grey]•[/] [yellow]{field}[/] [grey]→[/] [green]{transformType}[/]"));
+                validTransforms++;
+            }
+            
+            if (validTransforms == 0)
+            {
+                transformsGrid.AddRow(new Markup("[grey]Nenhuma transformação configurada[/]"));
+            }
+            else if (_viewModel.Configuration.Transforms.Count > 5)
+            {
+                transformsGrid.AddRow(new Markup($"[grey]... +{_viewModel.Configuration.Transforms.Count - 5}[/]"));
+            }
+
+            mainGrid.AddRow(new Panel(transformsGrid)
+                .Header($"[underline cyan1]⚙️  Transformações ({_viewModel.Configuration.Transforms.Count})[/]", Justify.Left)
+                .Border(BoxBorder.Rounded)
+                .BorderColor(Color.Green)
+                .Padding(0, 0));
+
+            mainGrid.AddEmptyRow();
+        }
+
+        return new Panel(mainGrid)
+            .Header("[bold green]📤 DESTINO (DESTINATION)[/]", Justify.Center)
+            .BorderColor(Color.Green)
+            .Padding(1, 0)
             .Expand();
     }
 
-    private Panel CreateLogsPanel()
+    private Panel CreateFooterPanel()
     {
-        var grid = new Grid().AddColumn();
+        var logsGrid = new Grid().AddColumn();
+        var globalLogs = _viewModel.GetGlobalLogs();
 
-        lock (_logMessagesLock)
+        if (globalLogs.Length > 0)
         {
-            if (_logMessages.Count == 0)
+            foreach (var log in globalLogs.TakeLast(10))
             {
-                grid.AddRow(new Markup("[grey]Aguardando eventos...[/]"));
-            }
-            else
-            {
-                foreach (var log in _logMessages.ToArray())
-                {
-                    grid.AddRow(new Markup(log));
-                }
+                logsGrid.AddRow(new Markup(log));
             }
         }
+        else
+        {
+            logsGrid.AddRow(new Markup("[grey]Aguardando eventos do sistema...[/]"));
+        }
 
-        return new Panel(grid)
-            .Header("[bold cyan1]📋 LOGS DE EXECUÇÃO[/]", Justify.Center)
-            .BorderColor(Color.Orange1)
-            .Padding(0, 0)
+        return new Panel(logsGrid)
+            .Header("[bold grey]📋 LOGS GLOBAIS DO SISTEMA[/]", Justify.Center)
+            .BorderColor(Color.Grey)
+            .Padding(1, 0)
             .Expand();
     }
 

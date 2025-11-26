@@ -42,6 +42,7 @@ public class DataPipelineService
     /// </summary>
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
+        _dashboardService.SetExecutionId(_executionId);
         _dashboardService.AddLogMessage($"Iniciando pipeline '{_configuration.Name}'", "INFO");
         _dashboardService.AddLogMessage($"Execution ID: {_executionId}", "INFO");
 

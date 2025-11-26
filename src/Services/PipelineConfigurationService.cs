@@ -22,7 +22,6 @@ public class PipelineConfigurationService
         var yaml = File.ReadAllText(filePath);
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .IgnoreUnmatchedProperties()
             .Build();
 
         var configuration = deserializer.Deserialize<PipelineConfiguration>(yaml);

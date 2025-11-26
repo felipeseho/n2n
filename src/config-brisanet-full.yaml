@@ -7,7 +7,7 @@ source:
     FilePath: "/Users/felipeseho/Desktop/bases/full-parceiro-brisanet.csv"
     Delimiter: ";"
     StartLine: 1
-    MaxLines: 1000
+    MaxLines: 100
 
 destination:
   type: "API"
@@ -30,20 +30,26 @@ destination:
       payload.subscriptionId: "subscription_id"
 
 processing:
-  LogDirectory: "logs"
-  CheckpointDirectory: "checkpoints"
-  CheckpointIntervalSeconds: 30
+  logDirectory: "logs"
+  checkpointDirectory: "checkpoints"
+  checkpointIntervalSeconds: 30
 
 filters:
-  - Field: "campaign"
-    Operator: "NotEquals"
-    Value: "Produto Revan - sem código campanha"
-  - Field: "end_date"
-    Operator: "Contains"
-    Value: "9999"
+  - field: "campaign"
+    operator: "NotEquals"
+    value: "Produto Revan - sem código campanha"
+  
+  - field: "campaign"
+    operator: "NotEquals"
+    value: "#VALUE!"
+    
+  - field: "end_date"
+    operator: "Contains"
+    value: "9999"
 
 transforms:
-  - Field: "email"
-    Type: "ToLower"
-  - Field: "campaign"
-    Type: "ToLower"
+  - field: "email"
+    type: "ToLower"
+  
+  - field: "campaign"
+    type: "ToLower"

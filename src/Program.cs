@@ -21,8 +21,8 @@ app.Configure(config =>
     // Adicionar comando para listar checkpoints
     config.AddCommand<ListCheckpointsCommand>("checkpoints")
         .WithDescription("Lista checkpoints disponíveis para retomada de execução")
-        .WithExample(new[] { "checkpoints" })
-        .WithExample(new[] { "checkpoints", "--directory", "checkpoints" });
+        .WithExample("checkpoints")
+        .WithExample("checkpoints", "--directory", "checkpoints");
 });
 
 try
