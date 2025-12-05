@@ -23,4 +23,8 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\n2n\n2n.csproj" />
+    </ItemGroup>
 </Project>

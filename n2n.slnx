@@ -1,3 +1,7 @@
 <Solution>
-  <Project Path="src\n2n.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src\n2n.cli\n2n.cli.csproj" />
+    <Project Path="src\n2n.Plugins\n2n.Plugins.csproj" />
+    <Project Path="src\n2n\n2n.csproj" />
+  </Folder>
 </Solution>

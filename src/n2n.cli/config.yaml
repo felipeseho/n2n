@@ -1,0 +1,31 @@
+sources:
+  - id: "algar-csv"
+    type: "n2n.Pluggins.Csv"
+    config:
+      path: "/Users/felipeseho/Desktop/bases/amostra-px-algaretica-exagestao-v2.csv"
+      delimiter: ","
+      hasHeaderRecord: true
+      encoding: "UTF-8"
+
+destinations:
+  - id: "hub-api"
+    type: "n2n.Pluggins.Http"
+    config: 
+      url: "https://api.erp.com"
+      method: "POST"
+
+pipelines:
+  - id: "algar-to-hub"
+    source: "algar-csv"
+    destinations:
+      - id: "hub-api"
+        mapping:
+          subscription_id: "{{ subscription.id }}"
+          partner: "{{ partner.name | upcase }}"
+          campaign: "{{ 'plan.config.id' | downcase }}"
+          start_date: "{{ order.date | date: '%Y-%m-%d' }}"
+          name: "{{ customer.name }}"
+          misisdn: "{{ customer.phone.number }}"
+          email: "{{ customer.email }}"
+          cpf: "{{ customer.documents.cpf }}"
+          cnpj: "{{ customer.documents.cnpj }}"

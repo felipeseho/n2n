@@ -11,6 +11,7 @@ Ela é uma **plataforma n2n (Any-to-Any)** que lê configurações de um arquivo
 1.  **Inicialização:** O app lê `config.yaml`, carrega DLLs de Plugins (Origem/Destino/Middleware) via Reflection e instancia os Workers.
 2.  **Producer (Source Plugin):** Lê dados brutos, converte para `JsonNode` e publica um `MessageEnvelope` no Barramento.
 3.  **Broadcast Bus:** Distribui o Envelope para os canais dos Pipelines assinantes.
+4.  **Filtros:** O dado da origem é filtrado baseado nas configurações.
 4.  **Transformation (Liquid):** O dado sofre mutação baseada em templates Liquid definidos no YAML.
 5.  **Consumer (Destination Plugin):** Recebe o JSON transformado e persiste (Banco, API, Arquivo).
 6.  **Observabilidade:** Todo o fluxo gera telemetria (OTel) que alimenta um Dashboard interativo no terminal.
@@ -30,6 +31,7 @@ A solução deve ser dividida em camadas (Ports and Adapters) e a composição d
 ### A. Geral ###
 Define alguns padrões de geração de código 
 
+- **Nome de Métodos:** Não utilizar o prefixo Async
 - **Extensions:** Usar o novo padrão de extension block disponibilizado no C# 14 e dotnet 10.
 
 ANTES
@@ -137,20 +139,20 @@ destinations:
   - id: "erp-api"
     type: "Plugins.HttpDestination"
     config: 
-      url: "[https://api.erp.com](https://api.erp.com)"
+      url: "https://api.erp.com"
       method: "POST"
 
 pipelines:
   - id: "sync-clientes"
     source: "crm-csv"
-    destinations: ["erp-api"]
-    
-    # Engine Liquid para transformar JSON -> JSON
-    mapping: 
-      external_id: "{{ source.codigo }}"
-      full_name: "{{ source.nome | upcase }} {{ source.sobrenome }}"
-      meta:
-        sync_date: "{{ 'now' | date: '%Y-%m-%d' }}"
+    destinations:
+      - id: "erp-api"
+        # Engine Liquid para transformar JSON -> JSON
+        mapping: 
+          external_id: "{{ source.codigo }}"
+          full_name: "{{ source.nome | upcase }} {{ source.sobrenome }}"
+          meta:
+            sync_date: "{{ 'now' | date: '%Y-%m-%d' }}"
 ```
 
 ## 5. Observabilidade e Dashboard (Estratégia Custom Exporter)

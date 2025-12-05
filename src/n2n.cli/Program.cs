@@ -4,7 +4,7 @@ using n2n.Infrastructure.Extensions;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder
-    .AddConfiguration(args)
+    .AddConfiguration()
     .AddInfrastructure()
     .AddTelemetry()
     .AddWorkers();

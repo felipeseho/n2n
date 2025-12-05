@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace n2n.Core.Models;
+namespace n2n.Models;
 
 public record MessageEnvelope(
     JsonNode Payload,
