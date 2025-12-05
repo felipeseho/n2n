@@ -6,14 +6,21 @@ public static class HostingExtensions
 {
     extension(IHostApplicationBuilder builder)
     {
-        public IHostApplicationBuilder AddConfiguration()
+        public IHostApplicationBuilder AddConfiguration(string[] args)
         {
-            var configPath = Path.Combine(AppContext.BaseDirectory, "config.yaml");
-            builder.Configuration.AddYamlFile(configPath, optional: false, reloadOnChange: true);
-        
-            builder.Services.AddOptions<RootConfig>()
-                .Bind(builder.Configuration);
+            var basePath = builder.Environment.ContentRootPath;
+            var effectivePath = Path.Combine(basePath, "config.yaml");
+
+            builder.Configuration.AddYamlFile(effectivePath, optional: false, reloadOnChange: true);
             
+            builder.Services.Configure<RootConfig>(options =>
+            {
+                var boundConfig = builder.Configuration.BindRootConfig();
+                options.Sources = boundConfig.Sources;
+                options.Destinations = boundConfig.Destinations;
+                options.Pipelines = boundConfig.Pipelines;
+            });
+
             return builder;
         }
 

@@ -1,11 +1,10 @@
-using n2n;
 using n2n.Extensions;
 using n2n.Infrastructure.Extensions;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder
-    .AddConfiguration()
+    .AddConfiguration(args)
     .AddInfrastructure()
     .AddTelemetry()
     .AddWorkers();

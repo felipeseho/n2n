@@ -1,7 +1,5 @@
 using System.Text;
-using Microsoft.Extensions.Configuration;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace n2n.Infrastructure.Configuration;
 
@@ -12,7 +10,6 @@ public class YamlConfigurationProvider : FileConfigurationProvider
     public override void Load(Stream stream)
     {
         var deserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
 
         using var reader = new StreamReader(stream, Encoding.UTF8);
