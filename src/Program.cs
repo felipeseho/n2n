@@ -1,7 +1,14 @@
 using n2n;
+using n2n.Extensions;
+using n2n.Infrastructure.Extensions;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+
+builder
+    .AddConfiguration()
+    .AddInfrastructure()
+    .AddTelemetry()
+    .AddWorkers();
 
 var host = builder.Build();
 host.Run();

@@ -24,12 +24,54 @@ Ela é uma **plataforma n2n (Any-to-Any)** que lê configurações de um arquivo
 - **UI/CLI:** `Spectre.Console`, `Spectre.Console.Cli`
 - **Observabilidade:** `OpenTelemetry` (Logs, Metrics, Traces), `System.Diagnostics.DiagnosticSource`.
 
-## 3. Estrutura da Solução (Clean Architecture)
-A solução deve ser dividida em camadas para garantir desacoplamento (Ports and Adapters):
+## 3. Estrutura da Solução (Clean Architecture & Modularity)
+A solução deve ser dividida em camadas (Ports and Adapters) e a composição deve ser feita via Extension Methods.
 
-### A. Camada Core (Abstrações & Contratos)
-*Define como os Plugins conversam com a Engine. Sem dependências de infraestrutura pesada.*
+### A. Geral ###
+Define alguns padrões de geração de código 
 
+- **Extensions:** Usar o novo padrão de extension block disponibilizado no C# 14 e dotnet 10.
+
+ANTES
+``` csharp
+public static class HostingExtensions
+{
+    public static IHostApplicationBuilder AddConfiguration(this IHostApplicationBuilder builder)
+    {
+        var configPath = Path.Combine(AppContext.BaseDirectory, "config.yaml");
+        builder.Configuration.AddYamlFile(configPath, optional: false, reloadOnChange: true);
+        
+        builder.Services.AddOptions<RootConfig>()
+            .Bind(builder.Configuration);
+            
+        return builder;
+    }
+}
+```
+
+AGORA
+``` csharp
+public static class HostingExtensions
+{
+    extension(IHostApplicationBuilder builder)
+    {
+        public IHostApplicationBuilder AddConfiguration()
+        {
+            var configPath = Path.Combine(AppContext.BaseDirectory, "config.yaml");
+            builder.Configuration.AddYamlFile(configPath, optional: false, reloadOnChange: true);
+        
+            builder.Services.AddOptions<RootConfig>()
+                .Bind(builder.Configuration);
+            
+            return builder;
+        }
+    }
+}
+```
+
+### B. Camada Core (Abstrações & Contratos)
+Define como os Plugins conversam com a Engine. Sem dependências de infraestrutura pesada.
+ 
 - **Interfaces:**
   - `IDataPublisher` (Publicar no barramento).
   - `IDataSubscriber` (Assinar canais).
@@ -47,7 +89,7 @@ A solução deve ser dividida em camadas para garantir desacoplamento (Ports and
   - `IDestinationPlugin`: `Task LoadAsync(JsonNode data, JsonNode pluginConfig, CancellationToken ct);`
   - `IMiddlewarePlugin`: `JsonNode Process(JsonNode data, JsonNode pluginConfig);`
 
-### B. Camada Infrastructure (A Engine)
+### C. Camada Infrastructure (A Engine)
 *Implementação dos mecanismos da plataforma.*
 
 - **Plugin System:**
@@ -59,9 +101,13 @@ A solução deve ser dividida em camadas para garantir desacoplamento (Ports and
 - **Observabilidade (Telemetry Store):**
   - `AppDiagnostics`: Singleton com `ActivitySource` e `Meter`.
   - `TelemetryStore`: Singleton mediador (Store) que guarda `ConcurrentQueue<string> Logs` e `ConcurrentDictionary<string, string> Metrics` para a UI.
-  - **Custom Exporters:** `SpectreLogExporter` e `SpectreMetricExporter` que alimentam o Store.
+- **Custom Exporters:** 
+  - `SpectreLogExporter` e `SpectreMetricExporter` que alimentam o Store.
+- **Extensions:**
+  - `IHostApplicationBuilder.AddInfrastructure()` Registra Bus, Transformer e PluginLoader.
+  - `IHostApplicationBuilder.AddTelemetry()` Configura OTel, Metrics e Logging providers.
 
-### C. Camada WorkerService (Orquestração & UI)
+### D. Camada WorkerService (Orquestração & UI)
 *Entry point e Composição.*
 
 - **ConfigLoader:** Deserializa o YAML para objetos de configuração (`RootConfig`, `PipelineConfig`).
@@ -69,26 +115,35 @@ A solução deve ser dividida em camadas para garantir desacoplamento (Ports and
   - O "Cérebro" da inicialização. Lê a config e cria instâncias de `BackgroundService` para cada Source e Destination definidos, conectando-os ao Bus.
 - **DashboardWorker:**
   - Serviço dedicado à UI. Injeta `TelemetryStore` e usa `AnsiConsole.Live` para desenhar o estado do sistema.
+- **Extensions:**
+  - `IHostApplicationBuilder.AddConfiguration()` Lê e registra o YAML.
+  - `IHostApplicationBuilder.AddWorkers()` Registra os Hosted Services.
 
 ## 4. Definição de Configuração (YAML Schema)
 
 A aplicação é dirigida por este arquivo. O código deve ser capaz de interpretá-lo:
+Para cada tipo de origem e destino, as informações de configuração serão diferentes.
+Você deve seguir o padrão IOption Pattern para as configurações, então cada classe de configuração ficará junto da respectiva classe de origem / destino.
 
 ```yaml
 sources:
   - id: "crm-csv"
     type: "Plugins.CsvSource" # Classe carregada via Reflection
-    config: { path: "./input/data.csv", delimiter: ";" }
+    config:
+      path: "./input/data.csv"
+      delimiter: ";"
 
 destinations:
   - id: "erp-api"
     type: "Plugins.HttpDestination"
-    config: { url: "[https://api.erp.com](https://api.erp.com)", method: "POST" }
+    config: 
+      url: "[https://api.erp.com](https://api.erp.com)"
+      method: "POST"
 
 pipelines:
   - id: "sync-clientes"
-    sourceId: "crm-csv"
-    destinationIds: ["erp-api"]
+    source: "crm-csv"
+    destinations: ["erp-api"]
     
     # Engine Liquid para transformar JSON -> JSON
     mapping: 
@@ -136,9 +191,21 @@ Implementar exportadores do OpenTelemetry que alimentam o `TelemetryStore`:
 - **Tratamento de Erros:** Consumers não devem derrubar o Producer. Use Try/Catch nos loops de mensagem.
 - **Escalabilidade:** A arquitetura deve permitir adicionar um novo Destino apenas criando uma nova classe herdando de `BaseDestinationWorker` e registrando no DI.
 
----
-**Ao gerar código:**
-1. Comece pela camada `Core`.
-2. Implemente a `Infrastructure` com foco no `BroadcastBus` e na lógica de `Observabilidade`.
-3. Implemente os `Workers`.
-4. Finalize com o `Program.cs` amarrando tudo.
+## 8. Diretrizes de Resposta
+1. **Idioma:** Responda as minhas perguntas e explique conceitos em **Português (Brasil)**.
+2. **Código:** Mantenha nomes de variáveis, funções e classes em **Inglês** (padrão internacional), a menos que eu peça especificamente o contrário.
+3. **Brevidade:** Seja direto. Não peça desculpas ou use frases de preenchimento. Vá direto à solução.
+4. **Sem Conversa:** Forneça apenas o código solicitado. Não inclua introduções, conclusões ou explicações textuais, a menos que eu pergunte "como isso funciona?".
+
+## 9. ❌ NUNCA FAÇA (a menos que eu solicite EXPLICITAMENTE)
+
+**Documentação e Comentários em Arquivos:**
+- Não crie arquivos README.md, ARCHITECTURE.md, CHANGELOG.md, CONTRIBUTING.md ou qualquer arquivo .md de documentação
+- Não crie arquivos de documentação com qualquer extensão (.txt, .doc, etc)
+- Não faça comentários no código
+- Não faça documentação XML no código
+
+## 10. Validação Após Geração
+- Você deve sempre compilar a solução para verificar se o código gerado está compilando
+- Não pode ter erros, se tiver você precisa corrigi-los
+- Não pode ter warnings, se tiver você precisa corrigi-los
