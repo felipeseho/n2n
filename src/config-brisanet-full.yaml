@@ -18,7 +18,7 @@ file:
       type: "string"
     - column: "start_date"
       type: "date"
-      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+      format: "dd/MM/yyyy"
     - column: "cpf"
       type: "string"
     - column: "email"
@@ -30,7 +30,7 @@ file:
       type: "string"
     - column: "end_date"
       type: "date"
-      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+      format: "dd/MM/yyyy"
       filter:
         operator: "Contains"
         value: "9999"

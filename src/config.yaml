@@ -1,31 +1,42 @@
 file:
-  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-algaretica-exagestao-v2.csv"
+  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/afagu.csv"
   batchLines: 1
-  startLine: 93
-  maxLines: 10 # Opcional: limita o número de linhas a processar (útil para testes)
+  startLine: 1
+  maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
   csvDelimiter: ","
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
   columns:
     - column: "subscription_id"
       type: "string"
+
     - column: "campaign"
       type: "string"
-    - column: "partner"
+
+    - column: "subpartner"
       type: "string"
-    - column: "start_date"
+
+    # 2024-05-14 00:00:00.000
+    - column: "sale_date"
       type: "date"
-      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
-    - column: "cpf"
+      format: "yyyy-MM-dd HH:mm:ss.fff"
+
+    - column: "user.cpf"
       type: "string"
-    - column: "cnpj"
+
+    - column: "user.cpf"
       type: "string"
-    - column: "email"
+
+    - column: "user.cnpj"
       type: "string"
-      regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-    - column: "msisdn"
+
+    - column: "user.email"
       type: "string"
-    - column: "name"
+
+    - column: "user.msisdn"
+      type: "string"
+
+    - column: "user.name"
       type: "string"
 
 # Nome da coluna CSV que contém o nome do endpoint a ser usado (opcional)
@@ -41,7 +52,7 @@ defaultEndpoint: "subscription_create"
 endpoints:
   - name: "subscription_create"
     endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"
-    # endpointUrl: "https://test-seho.requestcatcher.com/"
+    # endpointUrl: "https://teste-elder.requestcatcher.com/test"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
     #   X-Custom-Header: "valor-customizado"
@@ -52,26 +63,40 @@ endpoints:
     maxRequestsPerSecond: 20
     mapping:
       - attribute: "event"
-        fixedValue: "subscription_create"
+        fixedValue: "subscription_suspension"
+
       - attribute: "eventDate"
-        csvColumn: "start_date"
-        transform: "date-format:yyyy-MM-ddT00:00:00Z"
+        csvColumn: "sale_date"
+        transform: "date-format:yyyy-MM-ddTHH:mm:ssZ"
+
       - attribute: "partner"
-        csvColumn: "partner"
+        fixedValue: "afagu"
+
       - attribute: "path"
         fixedValue: "/api/v1/events/ingest"
-      - attribute: "payload.campaign"
-        csvColumn: "campaign"
-      - attribute: "payload.cpf"
-        csvColumn: "cpf"
-        transform: "empty-to-null"
-      - attribute: "payload.cnpj"
-        csvColumn: "cnpj"
-        transform: "empty-to-null"
-      - attribute: "payload.email"
-        csvColumn: "email"
-        transform: "lowercase"
-      - attribute: "payload.msisdn"
-        csvColumn: "msisdn"
+
       - attribute: "payload.subscriptionId"
         csvColumn: "subscription_id"
+
+      - attribute: "payload.campaign"
+        csvColumn: "campaign"
+        transform: "lowercase"
+
+      - attribute: "payload.subpartnerId"
+        csvColumn: "subpartner"
+
+      - attribute: "payload.cpf"
+        csvColumn: "user.cpf"
+
+      - attribute: "payload.cnpj"
+        csvColumn: "user.cnpj"
+
+      - attribute: "payload.email"
+        csvColumn: "user.email"
+        transform: "empty-to-null"
+
+      - attribute: "payload.msisdn"
+        csvColumn: "user.msisdn"
+
+      - attribute: "payload.name"
+        csvColumn: "user.name"

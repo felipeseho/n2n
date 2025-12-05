@@ -1,11 +1,11 @@
 file:
-  inputPath: "/users/felipeseho/Desktop/bases/amostra-px-tim-exaseguranca-v2.csv"
-  batchLines: 100
+  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exaseguranca-v2.csv"
+  batchLines: 1
   startLine: 1
-  maxLines: 100  # Opcional: limita o número de linhas a processar (útil para testes)
-  logDirectory: "logs"  # Diretório onde os logs serão salvos
-  csvDelimiter: ";"
-  checkpointDirectory: "checkpoints"  # Diretório onde os checkpoints serão salvos
+  maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
+  logDirectory: "logs" # Diretório onde os logs serão salvos
+  csvDelimiter: ","
+  checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
   columns:
     - column: "subscription_id"
       type: "string"
@@ -40,8 +40,8 @@ defaultEndpoint: "subscription_create"
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    # endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"
-    endpointUrl: "https://test-seho.requestcatcher.com/"
+    endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"
+    # endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
     #   X-Custom-Header: "valor-customizado"
@@ -57,12 +57,11 @@ endpoints:
         csvColumn: "start_date"
         transform: "date-format:yyyy-MM-ddT00:00:00Z"
       - attribute: "partner"
-        fixedValue: "brisanet"
+        fixedValue: "partner"
       - attribute: "path"
         fixedValue: "/api/v1/events/ingest"
       - attribute: "payload.campaign"
         csvColumn: "campaign"
-        transform: "lowercase"
       - attribute: "payload.cpf"
         csvColumn: "cpf"
       - attribute: "payload.cnpj"

@@ -1,5 +1,5 @@
 file:
-  inputPath: "/users/felipeseho/Desktop/bases/amostra-px-tim-exacloud-v2.csv"
+  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
   batchLines: 1
   startLine: 1
   maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
@@ -62,7 +62,6 @@ endpoints:
         fixedValue: "/api/v1/events/ingest"
       - attribute: "payload.campaign"
         csvColumn: "campaign"
-        transform: "lowercase"
       - attribute: "payload.cpf"
         csvColumn: "cpf"
       - attribute: "payload.cnpj"
