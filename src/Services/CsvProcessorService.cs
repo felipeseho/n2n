@@ -52,15 +52,26 @@ public class CsvProcessorService
             MissingFieldFound = null
         };
 
-        // Contar total de linhas primeiro
+        // Contar total de linhas primeiro (ou usar maxLines se configurado)
         var totalLines = 0;
-        dashboardService.AddLogMessage("Contando linhas do arquivo CSV...", "INFO");
-        await Task.Run(() =>
+        if (_context.Configuration.File.MaxLines.HasValue)
         {
-            totalLines = CountCsvLines(_context.Configuration.File.InputPath);
+            // Se maxLines está configurado, usar ele como total estimado
+            totalLines = _context.Configuration.File.MaxLines.Value;
+            dashboardService.AddLogMessage($"Modo de teste: processando até {totalLines:N0} linhas", "INFO");
             _metricsService.StartProcessing(totalLines);
-        });
-        dashboardService.AddLogMessage($"Total de {totalLines:N0} linhas encontradas", "SUCCESS");
+        }
+        else
+        {
+            // Apenas conta todas as linhas se não houver limite configurado
+            dashboardService.AddLogMessage("Contando linhas do arquivo CSV...", "INFO");
+            await Task.Run(() =>
+            {
+                totalLines = CountCsvLines(_context.Configuration.File.InputPath);
+                _metricsService.StartProcessing(totalLines);
+            });
+            dashboardService.AddLogMessage($"Total de {totalLines:N0} linhas encontradas", "SUCCESS");
+        }
 
         using var reader = new StreamReader(_context.Configuration.File.InputPath);
         using var csv = new CsvReader(reader, csvConfig);
@@ -145,6 +156,15 @@ public class CsvProcessorService
                 if (!filterService.PassesFilters(record))
                 {
                     _metricsService.RecordFilteredLines(1);
+                    
+                    // Verificar se atingiu o limite máximo de linhas LIDAS (não processadas)
+                    // Isso evita que o filtro permita ler o arquivo inteiro
+                    if (_context.Configuration.File.MaxLines.HasValue && 
+                        linesProcessedCount >= _context.Configuration.File.MaxLines.Value)
+                    {
+                        break;
+                    }
+                    
                     continue;
                 }
 
@@ -155,18 +175,25 @@ public class CsvProcessorService
                     await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, 400, validationError, headers);
                     totalErrors++;
                     _metricsService.RecordValidationError();
+                    
+                    // Incrementar contador mesmo para linhas com erro
+                    linesProcessedCount++;
+                    
+                    // Verificar se atingiu o limite máximo de linhas
+                    if (_context.Configuration.File.MaxLines.HasValue && 
+                        linesProcessedCount >= _context.Configuration.File.MaxLines.Value)
+                    {
+                        break;
+                    }
+                    
                     continue;
                 }
 
                 batch.Add(record);
                 linesProcessedCount++;
 
-                // Processar lote quando atingir o tamanho configurado OU quando atingir o limite máximo de linhas
-                var shouldProcessBatch = batch.Count >= _context.Configuration.File.BatchLines ||
-                                         (_context.Configuration.File.MaxLines.HasValue &&
-                                          linesProcessedCount >= _context.Configuration.File.MaxLines.Value);
-
-                if (shouldProcessBatch)
+                // Processar lote quando atingir o tamanho configurado
+                if (batch.Count >= _context.Configuration.File.BatchLines)
                 {
                     dashboardService.AddLogMessage($"Processando lote de {batch.Count} linhas", "INFO");
                     
@@ -204,9 +231,13 @@ public class CsvProcessorService
                         lastCheckpointSave = DateTime.Now;
                         dashboardService.AddLogMessage($"Checkpoint salvo - Linha {lineNumber}", "INFO");
                     }
-
-                    // Verificar se atingiu o limite máximo de linhas após processar o batch
-                    if (_context.Configuration.File.MaxLines.HasValue && linesProcessedCount >= _context.Configuration.File.MaxLines.Value) break;
+                }
+                
+                // Verificar se atingiu o limite máximo de linhas APÓS adicionar ao batch
+                if (_context.Configuration.File.MaxLines.HasValue && 
+                    linesProcessedCount >= _context.Configuration.File.MaxLines.Value)
+                {
+                    break;
                 }
             }
 
