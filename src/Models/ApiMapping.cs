@@ -19,4 +19,9 @@ public class ApiMapping
     public List<string>? Transforms { get; set; }
     
     public string? FixedValue { get; set; }
+    
+    /// <summary>
+    ///     Fórmula a ser avaliada para gerar valor dinamicamente (ex: now(), uuid(), today())
+    /// </summary>
+    public string? Formula { get; set; }
 }

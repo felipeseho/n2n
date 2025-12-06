@@ -150,21 +150,23 @@ public class ConfigurationService
                 return false;
             }
 
-            // Cada mapping deve ter FixedValue OU CsvColumn, mas não ambos
+            // Cada mapping deve ter FixedValue, CsvColumn ou Formula, mas não mais de um
             var hasFixedValue = !string.IsNullOrWhiteSpace(mapping.FixedValue);
             var hasCsvColumn = !string.IsNullOrWhiteSpace(mapping.CsvColumn);
+            var hasFormula = !string.IsNullOrWhiteSpace(mapping.Formula);
 
-            if (!hasFixedValue && !hasCsvColumn)
+            if (!hasFixedValue && !hasCsvColumn && !hasFormula)
             {
                 Console.WriteLine(
-                    $"Mapping para '{mapping.Attribute}' em '{contextName}' deve ter 'fixedValue' ou 'csvColumn' definido");
+                    $"Mapping para '{mapping.Attribute}' em '{contextName}' deve ter 'fixedValue', 'csvColumn' ou 'formula' definido");
                 return false;
             }
 
-            if (hasFixedValue && hasCsvColumn)
+            var activeSourcesCount = (hasFixedValue ? 1 : 0) + (hasCsvColumn ? 1 : 0) + (hasFormula ? 1 : 0);
+            if (activeSourcesCount > 1)
             {
                 Console.WriteLine(
-                    $"Mapping para '{mapping.Attribute}' em '{contextName}' não pode ter 'fixedValue' e 'csvColumn' ao mesmo tempo");
+                    $"Mapping para '{mapping.Attribute}' em '{contextName}' deve ter apenas uma fonte de valor (fixedValue, csvColumn ou formula)");
                 return false;
             }
         }

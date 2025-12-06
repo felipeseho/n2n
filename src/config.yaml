@@ -68,6 +68,14 @@ endpoints:
       - attribute: "eventDate"
         csvColumn: "sale_date"
         transform: "date-format:yyyy-MM-ddTHH:mm:ssZ"
+      
+      # Exemplo de fórmula: data/hora atual
+      - attribute: "processedAt"
+        formula: "now()"
+      
+      # Exemplo de fórmula: UUID único
+      - attribute: "requestId"
+        formula: "uuid()"
 
       - attribute: "partner"
         fixedValue: "afagu"

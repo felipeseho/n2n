@@ -18,8 +18,13 @@ public static class PayloadBuilder
         {
             string? transformedValue;
 
+            // Se há uma fórmula, avaliá-la
+            if (!string.IsNullOrEmpty(mapping.Formula))
+            {
+                transformedValue = FormulaEvaluator.EvaluateFormula(mapping.Formula);
+            }
             // Se há um valor fixo, usá-lo diretamente
-            if (!string.IsNullOrEmpty(mapping.FixedValue))
+            else if (!string.IsNullOrEmpty(mapping.FixedValue))
             {
                 transformedValue = mapping.FixedValue;
             }
