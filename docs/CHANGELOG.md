@@ -5,6 +5,59 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## 0.11.0 - 2025-12-06
+
+### ⚠️ BREAKING CHANGES
+
+#### 🔍 Formato de Filtros Simplificado
+
+**Removida a compatibilidade com o formato antigo de filtros (`filter:` singular).**
+
+Agora todos os filtros devem usar o formato `filters:` (plural), que suporta múltiplos filtros na mesma coluna.
+
+**❌ Formato antigo (não funciona mais):**
+```yaml
+- column: "Status"
+  type: "string"
+  filter:
+    operator: "Equals"
+    value: "ativo"
+```
+
+**✅ Formato novo (obrigatório):**
+```yaml
+- column: "Status"
+  type: "string"
+  filters:  # ← Sempre usar "filters" (plural)
+    - operator: "Equals"
+      value: "ativo"
+```
+
+**✅ Múltiplos filtros na mesma coluna:**
+```yaml
+- column: "Status"
+  type: "string"
+  filters:
+    - operator: "NotEquals"
+      value: "cancelado"
+    - operator: "NotEquals"
+      value: "inativo"
+    - operator: "NotEquals"
+      value: "suspenso"
+```
+
+**Benefícios:**
+- ✅ Código mais simples e fácil de manter
+- ✅ Suporte nativo a múltiplos filtros por coluna
+- ✅ Lógica AND entre todos os filtros
+- ✅ Dashboard aprimorado mostrando todos os filtros ativos
+
+### 🔧 Melhorias
+
+- **Dashboard:** Agora exibe o total de filtros e em quantas colunas estão aplicados
+- **Dashboard:** Mostra até 5 filtros individuais com indicação de quantos filtros adicionais existem
+- **Documentação:** Atualizada para refletir apenas o novo formato
+
 ## 0.10.0 - 2025-11-25
 
 ### ✨ Novos Recursos

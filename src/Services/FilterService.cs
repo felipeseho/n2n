@@ -16,7 +16,6 @@ public class FilterService
         
         foreach (var column in columns)
         {
-            // Suporte a múltiplos filtros (novo formato)
             if (column.Filters != null && column.Filters.Count > 0)
             {
                 foreach (var filter in column.Filters)
@@ -29,17 +28,6 @@ public class FilterService
                         CaseInsensitive = filter.CaseInsensitive
                     });
                 }
-            }
-            // Suporte a filtro único (formato antigo - retrocompatibilidade)
-            else if (column.Filter != null)
-            {
-                _filters.Add(new ColumnFilter
-                {
-                    Column = column.Column,
-                    Operator = column.Filter.Operator,
-                    Value = column.Filter.Value,
-                    CaseInsensitive = column.Filter.CaseInsensitive
-                });
             }
         }
     }

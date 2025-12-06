@@ -1,8 +1,8 @@
 file:
-  inputPath: "/Users/felipeseho/Desktop/bases/parceiro-brisanet-2025-11-18.csv"
-  batchLines: 200
+  inputPath: "/Users/felipeseho/Desktop/bases/full-parceiro-brisanet.csv"
+  batchLines: 100
   startLine: 1
-  # maxLines: 50  # Opcional: limita o número de linhas a processar (útil para testes)
+  maxLines: 50000  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs"  # Diretório onde os logs serão salvos
   csvDelimiter: ";"
   checkpointDirectory: "checkpoints"  # Diretório onde os checkpoints serão salvos
@@ -11,9 +11,11 @@ file:
       type: "string"
     - column: "campaign"
       type: "string"
-      filter:
-        operator: "NotEquals"
-        value: "Produto Revan - sem código campanha"
+      filters:
+        - operator: "NotEquals"
+          value: "Produto Revan - sem código campanha"
+        - operator: "NotEquals"
+          value: "#VALUE!"
     - column: "sub_partner"
       type: "string"
     - column: "start_date"
@@ -31,9 +33,9 @@ file:
     - column: "end_date"
       type: "date"
       format: "dd/MM/yyyy"
-      filter:
-        operator: "Contains"
-        value: "9999"
+      filters:
+        - operator: "Contains"
+          value: "9999"
 
 # Nome da coluna CSV que contém o nome do endpoint a ser usado (opcional)
 # Se configurada, cada linha pode especificar qual endpoint usar
@@ -47,8 +49,8 @@ defaultEndpoint: "subscription_create"
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    # endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"    
-    endpointUrl: "https://test-seho.requestcatcher.com/"
+    endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"    
+    # endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
     #   X-Custom-Header: "valor-customizado"

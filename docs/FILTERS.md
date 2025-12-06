@@ -15,28 +15,28 @@ Os **filtros de dados** permitem processar apenas linhas do CSV que atendem a cr
 - ✅ **Selecionar dados de um período específico**
 - ✅ **Reduzir custos** processando menos dados
 
-### 🆕 Novidade: Múltiplos Filtros na Mesma Coluna
+### ✨ Múltiplos Filtros na Mesma Coluna
 
-Agora você pode aplicar **múltiplos filtros na mesma coluna**, permitindo lógicas mais complexas como:
+Você pode aplicar **múltiplos filtros na mesma coluna**, permitindo lógicas mais complexas como:
 
 - Excluir vários valores diferentes (ex: não processar "cancelado" NEM "inativo")
 - Combinar condições positivas e negativas
 - Filtros mais refinados sem precisar de múltiplas colunas
 
-**Dois formatos disponíveis:**
+**Formato:**
 
 ```yaml
-# Formato antigo - filtro único (ainda funciona)
+# Um único filtro
 - column: "Status"
   type: "string"
-  filter:
-    operator: "Equals"
-    value: "ativo"
+  filters:
+    - operator: "Equals"
+      value: "ativo"
 
-# Formato novo - múltiplos filtros na mesma coluna
+# Múltiplos filtros na mesma coluna
 - column: "Status"
   type: "string"
-  filters:  # ← Note o "s" no final
+  filters:  # ← Use sempre "filters" (plural)
     - operator: "NotEquals"
       value: "cancelado"
     - operator: "NotEquals"
@@ -56,10 +56,10 @@ file:
   mapping:
     - column: "Status"
       type: "string"
-      filter:                    # ← Filtro configurado
-        operator: "Equals"
-        value: "ativo"
-        caseInsensitive: true
+      filters:                   # ← Filtros configurados
+        - operator: "Equals"
+          value: "ativo"
+          caseInsensitive: true
 ```
 
 ---
@@ -71,10 +71,10 @@ file:
 Processa apenas linhas onde o valor é **exatamente igual** ao especificado.
 
 ```yaml
-filter:
-  operator: "Equals"
-  value: "ativo"
-  caseInsensitive: true    # Opcional: ignora maiúsculas/minúsculas
+filters:
+  - operator: "Equals"
+    value: "ativo"
+    caseInsensitive: true    # Opcional: ignora maiúsculas/minúsculas
 ```
 
 **Exemplos:**
@@ -90,10 +90,10 @@ filter:
 Processa apenas linhas onde o valor é **diferente** do especificado.
 
 ```yaml
-filter:
-  operator: "NotEquals"
-  value: "cancelado"
-  caseInsensitive: true
+filters:
+  - operator: "NotEquals"
+    value: "cancelado"
+    caseInsensitive: true
 ```
 
 **Exemplos:**
@@ -109,10 +109,10 @@ filter:
 Processa apenas linhas onde o valor **contém** o texto especificado.
 
 ```yaml
-filter:
-  operator: "Contains"
-  value: "promo"
-  caseInsensitive: true
+filters:
+  - operator: "Contains"
+    value: "promo"
+    caseInsensitive: true
 ```
 
 **Exemplos:**
@@ -128,10 +128,10 @@ filter:
 Processa apenas linhas onde o valor **não contém** o texto especificado.
 
 ```yaml
-filter:
-  operator: "NotContains"
-  value: "teste"
-  caseInsensitive: true
+filters:
+  - operator: "NotContains"
+    value: "teste"
+    caseInsensitive: true
 ```
 
 **Exemplos:**
@@ -154,10 +154,10 @@ file:
   mapping:
     - column: "Status"
       type: "string"
-      filter:
-        operator: "Equals"
-        value: "ativo"
-        caseInsensitive: true
+      filters:
+        - operator: "Equals"
+          value: "ativo"
+          caseInsensitive: true
 
 endpoints:
   - name: "api"
@@ -197,18 +197,18 @@ file:
     # Filtro 1: Campanha específica
     - column: "Campanha"
       type: "string"
-      filter:
-        operator: "Equals"
-        value: "promo2024"
-        caseInsensitive: true
+      filters:
+        - operator: "Equals"
+          value: "promo2024"
+          caseInsensitive: true
     
     # Filtro 2: Excluir cancelados
     - column: "Status"
       type: "string"
-      filter:
-        operator: "NotEquals"
-        value: "cancelado"
-        caseInsensitive: true
+      filters:
+        - operator: "NotEquals"
+          value: "cancelado"
+          caseInsensitive: true
 
 endpoints:
   - name: "marketing"
@@ -247,10 +247,10 @@ file:
   mapping:
     - column: "Plano"
       type: "string"
-      filter:
-        operator: "Contains"
-        value: "premium"
-        caseInsensitive: true
+      filters:
+        - operator: "Contains"
+          value: "premium"
+          caseInsensitive: true
 
 endpoints:
   - name: "api"
@@ -291,10 +291,10 @@ file:
   mapping:
     - column: "Ambiente"
       type: "string"
-      filter:
-        operator: "NotContains"
-        value: "teste"
-        caseInsensitive: true
+      filters:
+        - operator: "NotContains"
+          value: "teste"
+          caseInsensitive: true
 
 endpoints:
   - name: "api"
@@ -335,24 +335,24 @@ file:
   mapping:
     - column: "Campanha"
       type: "string"
-      filter:
-        operator: "Equals"
-        value: "promo2024"
-        caseInsensitive: true
+      filters:
+        - operator: "Equals"
+          value: "promo2024"
+          caseInsensitive: true
     
     - column: "Plano"
       type: "string"
-      filter:
-        operator: "Contains"
-        value: "premium"
-        caseInsensitive: true
+      filters:
+        - operator: "Contains"
+          value: "premium"
+          caseInsensitive: true
     
     - column: "Status"
       type: "string"
-      filter:
-        operator: "Equals"
-        value: "ativo"
-        caseInsensitive: true
+      filters:
+        - operator: "Equals"
+          value: "ativo"
+          caseInsensitive: true
 
 endpoints:
   - name: "api"
@@ -456,12 +456,12 @@ file:
         - operator: "NotEquals"
           value: "inativo"
     
-    # Filtro único em outra coluna
+    # Filtro em outra coluna
     - column: "Campanha"
       type: "string"
-      filter:
-        operator: "Equals"
-        value: "promo2024"
+      filters:
+        - operator: "Equals"
+          value: "promo2024"
 
 endpoints:
   - name: "marketing"

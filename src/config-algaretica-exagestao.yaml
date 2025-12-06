@@ -1,8 +1,8 @@
 file:
   inputPath: "/Users/felipeseho/Desktop/bases/amostra-px-algaretica-exagestao-v2.csv"
-  batchLines: 20
-  startLine: 30
-  maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
+  batchLines: 1000
+  startLine: 1
+  maxLines: 10000 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
   csvDelimiter: ","
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
@@ -34,7 +34,7 @@ file:
 
 # Endpoint padrão a ser usado quando não especificado via --endpoint-name ou coluna CSV (opcional)
 # Se não configurado e houver apenas 1 endpoint, ele será usado automaticamente
-defaultEndpoint: "subscription_suspension" # subscription_create  subscription_suspension  subscription_renew  subscription_cancel
+defaultEndpoint: "subscription_create" # subscription_create  subscription_suspension  subscription_renew  subscription_cancel
 
 # Lista de endpoints nomeados (obrigatório - deve ter pelo menos um)
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
@@ -49,7 +49,7 @@ endpoints:
     requestTimeout: 30
     retryAttempts: 3
     retryDelaySeconds: 5
-    maxRequestsPerSecond: 20
+    maxRequestsPerSecond: 1000
     mapping:
       - attribute: "event"
         fixedValue: "subscription_create"

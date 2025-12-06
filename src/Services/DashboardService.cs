@@ -367,15 +367,33 @@ public class DashboardService(
         }
 
         // Obter informações de filtros das colunas configuradas
-        var filtersCount = context.Configuration.File.Columns.Count(c => c.Filter != null);
-        if (filtersCount > 0)
+        var columnsWithFilters = context.Configuration.File.Columns.Where(c => c.Filters != null && c.Filters.Count > 0).ToList();
+        var totalFilters = columnsWithFilters.Sum(c => c.Filters?.Count ?? 0);
+        
+        if (totalFilters > 0)
         {
             grid.AddEmptyRow();
-            grid.AddRow("[cyan1]Filtros:[/]", $"[blue]{filtersCount} coluna(s) com filtros[/]");
+            grid.AddRow("[cyan1]Filtros:[/]", $"[blue]{totalFilters} filtro(s) em {columnsWithFilters.Count} coluna(s)[/]");
             grid.AddEmptyRow();
-            foreach (var column in context.Configuration.File.Columns.Where(c => c.Filter != null).Take(3))
+            
+            var displayedFilters = 0;
+            foreach (var column in columnsWithFilters)
             {
-                grid.AddRow($"  🔍 {column.Column} [yellow]{column.Filter?.Operator}[/]" , $"[grey]{column.Filter?.Value}[/]");
+                if (column.Filters == null) continue;
+                
+                foreach (var filter in column.Filters)
+                {
+                    if (displayedFilters >= 5) break; // Limitar a 5 filtros na exibição
+                    grid.AddRow($"  🔍 {column.Column} [yellow]{filter.Operator}[/]", $"[grey]{filter.Value}[/]");
+                    displayedFilters++;
+                }
+                
+                if (displayedFilters >= 5) break;
+            }
+            
+            if (totalFilters > 5)
+            {
+                grid.AddRow($"  [dim]... e mais {totalFilters - 5} filtro(s)[/]", "");
             }
         }
         
