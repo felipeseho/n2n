@@ -1,8 +1,8 @@
 file:
   inputPath: "/Users/felipeseho/Desktop/bases/full-parceiro-brisanet.csv"
-  batchLines: 100
+  batchLines: 200
   startLine: 1
-  maxLines: 50000  # Opcional: limita o número de linhas a processar (útil para testes)
+  maxLines: 10000  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs"  # Diretório onde os logs serão salvos
   csvDelimiter: ";"
   checkpointDirectory: "checkpoints"  # Diretório onde os checkpoints serão salvos
