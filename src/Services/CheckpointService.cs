@@ -9,18 +9,53 @@ namespace n2n.Services;
 public class CheckpointService
 {
     /// <summary>
-    ///     Salva checkpoint no arquivo
+    ///     Salva checkpoint no arquivo com informações completas da execução
     /// </summary>
-    public async Task SaveCheckpointAsync(string checkpointPath, int lineNumber, int totalProcessed,
-        int successCount, int errorCount)
+    public async Task SaveCheckpointAsync(
+        string checkpointPath, 
+        int lineNumber, 
+        int totalProcessed,
+        int successCount, 
+        int errorCount,
+        AppExecutionContext context,
+        DateTime executionStartTime)
     {
         var checkpoint = new Checkpoint
         {
+            // Progresso
             LastProcessedLine = lineNumber,
             LastUpdate = DateTime.Now,
             TotalProcessed = totalProcessed,
             SuccessCount = successCount,
-            ErrorCount = errorCount
+            ErrorCount = errorCount,
+            
+            // Informações da execução
+            ExecutionId = context.ExecutionId,
+            ExecutionStartTime = executionStartTime,
+            
+            // Configurações
+            Configuration = new CheckpointConfiguration
+            {
+                InputPath = context.Configuration.File.InputPath,
+                ConfigPath = context.CommandLineOptions.ConfigPath ?? "config.yaml",
+                BatchLines = context.Configuration.File.BatchLines,
+                Delimiter = context.Configuration.File.CsvDelimiter,
+                StartLine = context.Configuration.File.StartLine,
+                MaxLines = context.Configuration.File.MaxLines,
+                DryRun = context.IsDryRun,
+                Verbose = context.IsVerbose,
+                EndpointNameOverride = context.CommandLineOptions.EndpointName
+            },
+            
+            // Endpoint ativo
+            EndpointInfo = new CheckpointEndpointInfo
+            {
+                EndpointName = context.ActiveEndpoint.Name,
+                BaseUrl = context.ActiveEndpoint.EndpointUrl,
+                Method = context.ActiveEndpoint.Method,
+                Timeout = context.ActiveEndpoint.RequestTimeout,
+                TotalMappings = context.ActiveEndpoint.Mapping?.Count ?? 0
+            }
         };
 
         var json = JsonSerializer.Serialize(checkpoint, new JsonSerializerOptions

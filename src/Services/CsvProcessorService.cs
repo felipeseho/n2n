@@ -18,6 +18,7 @@ public class CsvProcessorService
     private readonly MetricsService _metricsService;
     private readonly ValidationService _validationService;
     private readonly AppExecutionContext _context;
+    private readonly DateTime _executionStartTime;
 
     public CsvProcessorService(
         ValidationService validationService,
@@ -33,6 +34,7 @@ public class CsvProcessorService
         _checkpointService = checkpointService;
         _metricsService = metricsService;
         _context = context;
+        _executionStartTime = DateTime.Now;
     }
 
     /// <summary>
@@ -106,14 +108,14 @@ public class CsvProcessorService
         dashboardService.AddLogMessage("Contagem de linhas concluída", "SUCCESS");
 
         var batch = new List<CsvRecord>();
-        var lineNumber = 1; // Linha 1 é o cabeçalho
+        var lineNumber = 0; // Contador de linhas de dados (cabeçalho não conta)
         var totalProcessed = checkpoint?.TotalProcessed ?? 0;
         var totalErrors = checkpoint?.ErrorCount ?? 0;
         var totalSuccess = checkpoint?.SuccessCount ?? 0;
         var totalSkipped = 0;
 
-        // Pular linhas até a linha inicial configurada
-        while (lineNumber < startLineFromCheckpoint && await csv.ReadAsync())
+        // Pular linhas até a linha inicial configurada (startLine conta a partir de 1 para primeira linha de dados)
+        while (lineNumber < (startLineFromCheckpoint - 1) && await csv.ReadAsync())
         {
             lineNumber++;
             totalSkipped++;
@@ -227,7 +229,9 @@ public class CsvProcessorService
                             lineNumber,
                             totalProcessed,
                             totalSuccess,
-                            totalErrors);
+                            totalErrors,
+                            _context,
+                            _executionStartTime);
                         lastCheckpointSave = DateTime.Now;
                         dashboardService.AddLogMessage($"Checkpoint salvo - Linha {lineNumber}", "INFO");
                     }
@@ -298,7 +302,9 @@ public class CsvProcessorService
                 lineNumber,
                 totalProcessed,
                 totalSuccess,
-                totalErrors);
+                totalErrors,
+                _context,
+                _executionStartTime);
 
             AnsiConsole.MarkupLine($"[cyan1]💾 Checkpoint salvo em:[/] [grey]{_context.ExecutionPaths.CheckpointPath}[/]");
         }

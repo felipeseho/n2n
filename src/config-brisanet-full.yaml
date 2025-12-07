@@ -1,6 +1,6 @@
 file:
   inputPath: "/Users/felipeseho/Desktop/bases/full-parceiro-brisanet.csv"
-  batchLines: 200
+  batchLines: 100
   startLine: 1
   maxLines: 10000  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs"  # Diretório onde os logs serão salvos
@@ -49,8 +49,8 @@ defaultEndpoint: "subscription_create"
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"    
-    # endpointUrl: "https://test-seho.requestcatcher.com/"
+    #endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"    
+    endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
     #   X-Custom-Header: "valor-customizado"
