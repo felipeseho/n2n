@@ -40,7 +40,7 @@ defaultEndpoint: "subscription_create"
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"
+    endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect-v2/v1/hub-connect-api-v2/events/ingest"
     # endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"

@@ -1,8 +1,8 @@
 file:
   inputPath: "/Users/felipeseho/Desktop/bases/full-parceiro-brisanet.csv"
-  batchLines: 100
+  batchLines: 1
   startLine: 1
-  maxLines: 10000  # Opcional: limita o número de linhas a processar (útil para testes)
+  maxLines: 1  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs"  # Diretório onde os logs serão salvos
   csvDelimiter: ";"
   checkpointDirectory: "checkpoints"  # Diretório onde os checkpoints serão salvos
@@ -49,8 +49,8 @@ defaultEndpoint: "subscription_create"
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    #endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect/v1/hub-connect-api/events/ingest"    
-    endpointUrl: "https://test-seho.requestcatcher.com/"
+    endpointUrl: "https://api-corporativo.whitelabel.com.br/hub-connect-v2/v1/hub-connect-api-v2/events/ingest"
+    #endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
     #   X-Custom-Header: "valor-customizado"
@@ -58,15 +58,16 @@ endpoints:
     requestTimeout: 30
     retryAttempts: 3
     retryDelaySeconds: 5
-    maxRequestsPerSecond: 100
+    maxRequestsPerSecond: 500
     mapping:
       - attribute: "event"
         fixedValue: "subscription_create"
       - attribute: "eventDate"
-        csvColumn: "start_date"
+        fixedValue: "2020-01-14T18:40:00Z"
         transform: "date-format:yyyy-MM-ddT00:00:00Z"
+        #csvColumn: "start_date"
       - attribute: "partner"
-        fixedValue: "brisanet"
+        fixedValue: "TEST-PERF"
       - attribute: "path"
         fixedValue: "/api/v1/events/ingest"
       - attribute: "payload.campaign"
