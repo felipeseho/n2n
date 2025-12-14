@@ -89,7 +89,35 @@ public static class DataTransformer
 
     private static string DateFormat(string value, string format)
     {
-        if (DateTime.TryParse(value, out var date)) return date.ToString(format);
+        // Tenta vários formatos comuns de entrada para evitar problemas de cultura entre SO
+        var inputFormats = new[]
+        {
+            "dd/MM/yyyy",
+            "d/M/yyyy",
+            "yyyy-MM-dd",
+            "MM/dd/yyyy",
+            "M/d/yyyy",
+            "dd-MM-yyyy",
+            "yyyy/MM/dd"
+        };
+
+        // Primeiro tenta com formatos explícitos (independente de cultura)
+        foreach (var inputFormat in inputFormats)
+        {
+            if (DateTime.TryParseExact(value, inputFormat, CultureInfo.InvariantCulture, 
+                DateTimeStyles.None, out var date))
+            {
+                return date.ToString(format, CultureInfo.InvariantCulture);
+            }
+        }
+
+        // Se nenhum formato explícito funcionou, tenta parse genérico com InvariantCulture
+        if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+        {
+            return parsedDate.ToString(format, CultureInfo.InvariantCulture);
+        }
+
+        // Se nada funcionou, retorna o valor original
         return value;
     }
 
