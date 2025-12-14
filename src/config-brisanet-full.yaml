@@ -1,8 +1,8 @@
 file:
   inputPath: "/Users/felipeseho/Desktop/bases/full-parceiro-brisanet.csv"
   batchLines: 100
-  startLine: 1000
-  maxLines: 100  # Opcional: limita o número de linhas a processar (útil para testes)
+  startLine: 200
+  maxLines: 1  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs"  # Diretório onde os logs serão salvos
   csvDelimiter: ";"
   checkpointDirectory: "checkpoints"  # Diretório onde os checkpoints serão salvos
@@ -49,7 +49,7 @@ defaultEndpoint: "subscription_create"
 # Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    endpointUrl: "https://api-corporativo.whitelabel.com.br/hub-connect-tomb2/v1/hub-connect-api-tomb2/events/ingest"
+    endpointUrl: "https://api-corporativo.whitelabel.com.br/hub-connect-tomb1/v1/hub-connect-api-tomb1/events/ingest"
     #endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
