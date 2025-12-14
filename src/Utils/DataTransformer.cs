@@ -92,6 +92,16 @@ public static class DataTransformer
         // Tenta vários formatos comuns de entrada para evitar problemas de cultura entre SO
         var inputFormats = new[]
         {
+            // Formatos com data e hora
+            "yyyy-MM-dd HH:mm:ss.fff",
+            "yyyy-MM-dd HH:mm:ss.ff",
+            "yyyy-MM-dd HH:mm:ss.f",
+            "yyyy-MM-dd HH:mm:ss",
+            "dd/MM/yyyy HH:mm:ss.fff",
+            "dd/MM/yyyy HH:mm:ss.ff",
+            "dd/MM/yyyy HH:mm:ss.f",
+            "dd/MM/yyyy HH:mm:ss",
+            // Formatos apenas com data
             "dd/MM/yyyy",
             "d/M/yyyy",
             "yyyy-MM-dd",
