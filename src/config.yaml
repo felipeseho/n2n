@@ -1,5 +1,5 @@
 file:
-  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/afagu.csv"
+  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
   batchLines: 1
   startLine: 1
   maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
@@ -7,37 +7,53 @@ file:
   csvDelimiter: ","
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
   columns:
-    - column: "subscription_id"
+    - column: "name"
       type: "string"
-
-    - column: "campaign"
+    - column: "email"
       type: "string"
-
-    - column: "subpartner"
+    - column: "cpf"
       type: "string"
-
-    # 2024-05-14 00:00:00.000
-    - column: "sale_date"
+    - column: "cnpj"
+      type: "string"
+    - column: "msisdn"
+      type: "string"
+    - column: "newMsisdn"
+      type: "string"
+    - column: "subscriptionId"
+      type: "string"
+    - column: "newSubscriptionId"
+      type: "string"
+    - column: "subPartnerId"
+      type: "string"
+    - column: "token"
+      type: "string"
+    - column: "expiryDate"
       type: "date"
-      format: "yyyy-MM-dd HH:mm:ss.fff"
-
-    - column: "user.cpf"
-      type: "string"
-
-    - column: "user.cpf"
-      type: "string"
-
-    - column: "user.cnpj"
-      type: "string"
-
-    - column: "user.email"
-      type: "string"
-
-    - column: "user.msisdn"
-      type: "string"
-
-    - column: "user.name"
-      type: "string"
+      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+    - column: "nextBillDate"
+      type: "date"
+      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+    - column: "chargingResult"
+      format: "string"
+    - column: "cents"
+      format: "string"
+    - column: "campaign"
+      format: "string"
+    - column: "productId"
+      format: "string"
+    - column: "serviceId"
+      format: "string"
+    - column: "la"
+      format: "string"
+    - column: "text"
+      format: "string"
+    - column: "args"
+      format: "string"
+    - column: "raw"
+      format: "string"
+    - column: "eventDate"
+      type: "date"
+      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
 
 # Nome da coluna CSV que contém o nome do endpoint a ser usado (opcional)
 # Se configurada, cada linha pode especificar qual endpoint usar
@@ -52,7 +68,7 @@ defaultEndpoint: "subscription_create"
 endpoints:
   - name: "subscription_create"
     endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect-v2/v1/hub-connect-api-v2/events/ingest"
-    # endpointUrl: "https://teste-elder.requestcatcher.com/test"
+    # endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
     #   X-Custom-Header: "valor-customizado"
@@ -63,48 +79,24 @@ endpoints:
     maxRequestsPerSecond: 20
     mapping:
       - attribute: "event"
-        fixedValue: "subscription_suspension"
-
+        fixedValue: "subscription_create"
       - attribute: "eventDate"
-        csvColumn: "sale_date"
-        transform: "date-format:yyyy-MM-ddTHH:mm:ssZ"
-      
-      # Exemplo de fórmula: data/hora atual
-      - attribute: "processedAt"
-        formula: "now()"
-      
-      # Exemplo de fórmula: UUID único
-      - attribute: "requestId"
-        formula: "uuid()"
-
+        csvColumn: "start_date"
+        transform: "date-format:yyyy-MM-ddT00:00:00Z"
       - attribute: "partner"
-        fixedValue: "afagu"
-
+        fixedValue: "partner"
       - attribute: "path"
         fixedValue: "/api/v1/events/ingest"
-
-      - attribute: "payload.subscriptionId"
-        csvColumn: "subscription_id"
-
       - attribute: "payload.campaign"
         csvColumn: "campaign"
-        transform: "lowercase"
-
-      - attribute: "payload.subpartnerId"
-        csvColumn: "subpartner"
-
       - attribute: "payload.cpf"
-        csvColumn: "user.cpf"
-
+        csvColumn: "cpf"
       - attribute: "payload.cnpj"
-        csvColumn: "user.cnpj"
-
+        csvColumn: "cnpj"
       - attribute: "payload.email"
-        csvColumn: "user.email"
-        transform: "empty-to-null"
-
+        csvColumn: "email"
+        transform: "lowercase"
       - attribute: "payload.msisdn"
-        csvColumn: "user.msisdn"
-
-      - attribute: "payload.name"
-        csvColumn: "user.name"
+        csvColumn: "msisdn"
+      - attribute: "payload.subscriptionId"
+        csvColumn: "subscription_id"
