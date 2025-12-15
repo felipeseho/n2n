@@ -342,9 +342,25 @@ public class DashboardService(
             .AddColumn(new GridColumn().NoWrap().PadRight(2))
             .AddColumn();
 
-        var filePath = context.Configuration.File.InputPath;
+        // Usar o arquivo atual sendo processado (CurrentInputFile) ou fallback para InputPath
+        var filePath = !string.IsNullOrWhiteSpace(context.ExecutionPaths.CurrentInputFile) 
+            ? context.ExecutionPaths.CurrentInputFile 
+            : context.Configuration.File.InputPath;
+        
         var fileName = Path.GetFileName(filePath);
         var fileDir = Path.GetDirectoryName(filePath);
+        
+        // Mostrar informação de múltiplos arquivos se houver
+        var inputFiles = context.Configuration.File.GetInputFiles();
+        if (inputFiles.Count > 1)
+        {
+            var currentIndex = inputFiles.FindIndex(f => f.Equals(filePath, StringComparison.OrdinalIgnoreCase));
+            if (currentIndex >= 0)
+            {
+                grid.AddRow("[cyan1]Arquivo:[/]", $"[yellow]{currentIndex + 1}[/] de [yellow]{inputFiles.Count}[/]");
+                grid.AddEmptyRow();
+            }
+        }
         
         grid.AddRow("[cyan1]Nome:[/]", $"[yellow]{fileName}[/]");
         grid.AddRow("[cyan1]Diretório:[/]", $"[grey]{ShortenPath(fileDir ?? "")}[/]");
