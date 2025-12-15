@@ -29,7 +29,12 @@ public class ConfigurationService
     {
         // Sobrescrever configurações de arquivo se fornecidas
         if (!string.IsNullOrWhiteSpace(options.InputPath))
+        {
+            // Se --input foi passado na linha de comando, usar como arquivo único
             config.File.InputPath = options.InputPath;
+            // Limpar InputPaths para evitar conflito
+            config.File.InputPaths = new List<string>();
+        }
 
         if (options.BatchLines.HasValue)
             config.File.BatchLines = options.BatchLines.Value;

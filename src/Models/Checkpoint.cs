@@ -11,6 +11,7 @@ public class Checkpoint
     public int TotalProcessed { get; set; }
     public int SuccessCount { get; set; }
     public int ErrorCount { get; set; }
+    public bool IsCompleted { get; set; }
     
     // Informações da execução
     public string ExecutionId { get; set; } = string.Empty;

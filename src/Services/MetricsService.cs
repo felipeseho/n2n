@@ -28,6 +28,34 @@ public class MetricsService
     }
 
     /// <summary>
+    ///     Reseta todas as métricas para processar um novo arquivo
+    /// </summary>
+    public void Reset()
+    {
+        lock (_lock)
+        {
+            _metrics.StartTime = DateTime.Now;
+            _metrics.EndTime = null;
+            _metrics.TotalLines = 0;
+            _metrics.ProcessedLines = 0;
+            _metrics.SkippedLines = 0;
+            _metrics.FilteredLines = 0;
+            _metrics.SuccessCount = 0;
+            _metrics.ErrorCount = 0;
+            _metrics.ValidationErrors = 0;
+            _metrics.TotalRetries = 0;
+            _metrics.BatchesProcessed = 0;
+            _metrics.MinResponseTimeMs = long.MaxValue;
+            _metrics.MaxResponseTimeMs = 0;
+            _metrics.AverageResponseTimeMs = 0;
+            _metrics.AverageBatchTimeMs = 0;
+            _metrics.HttpStatusCodes.Clear();
+            _batchTimes.Clear();
+            _responseTimes.Clear();
+        }
+    }
+
+    /// <summary>
     ///     Inicia o rastreamento do processamento
     /// </summary>
     public void StartProcessing(int totalLines)

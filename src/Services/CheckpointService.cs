@@ -19,7 +19,8 @@ public class CheckpointService
         int errorCount,
         AppExecutionContext context,
         DateTime executionStartTime,
-        string? errorMessage = null)
+        string? errorMessage = null,
+        bool isCompleted = false)
     {
         var checkpoint = new Checkpoint
         {
@@ -29,6 +30,7 @@ public class CheckpointService
             TotalProcessed = totalProcessed,
             SuccessCount = successCount,
             ErrorCount = errorCount,
+            IsCompleted = isCompleted,
             
             // Informações da execução
             ExecutionId = context.ExecutionId,

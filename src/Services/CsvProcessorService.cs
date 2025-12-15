@@ -18,7 +18,6 @@ public class CsvProcessorService
     private readonly MetricsService _metricsService;
     private readonly ValidationService _validationService;
     private readonly AppExecutionContext _context;
-    private readonly DateTime _executionStartTime;
 
     public CsvProcessorService(
         ValidationService validationService,
@@ -34,7 +33,6 @@ public class CsvProcessorService
         _checkpointService = checkpointService;
         _metricsService = metricsService;
         _context = context;
-        _executionStartTime = DateTime.Now;
     }
 
     /// <summary>
@@ -52,9 +50,24 @@ public class CsvProcessorService
 
         dashboardService.AddLogMessage($"Total de {inputFiles.Count} arquivo(s) para processar", "INFO");
 
+        // Verificar quais arquivos já foram completados
+        var currentExecutionId = _context.CommandLineOptions.ExecutionId ?? Guid.NewGuid().ToString();
+        var configService = new ConfigurationService();
+
         for (var i = 0; i < inputFiles.Count; i++)
         {
             var inputFile = inputFiles[i];
+            
+            // Verificar se este arquivo já foi completado
+            var checkpointPath = configService.GenerateExecutionPaths(_context.Configuration, currentExecutionId, inputFile).CheckpointPath;
+            var existingCheckpoint = _checkpointService.LoadCheckpoint(checkpointPath);
+            
+            if (existingCheckpoint != null && existingCheckpoint.IsCompleted)
+            {
+                dashboardService.AddLogMessage($"⏭️  Arquivo {i + 1}/{inputFiles.Count} já processado: {Path.GetFileName(inputFile)}", "INFO");
+                continue;
+            }
+            
             dashboardService.AddLogMessage($"═══════════════════════════════════════════════════", "INFO");
             dashboardService.AddLogMessage($"Processando arquivo {i + 1}/{inputFiles.Count}: {Path.GetFileName(inputFile)}", "INFO");
             dashboardService.AddLogMessage($"═══════════════════════════════════════════════════", "INFO");
@@ -71,6 +84,15 @@ public class CsvProcessorService
         dashboardService.AddLogMessage("═══════════════════════════════════════════════════", "SUCCESS");
         dashboardService.AddLogMessage($"Todos os {inputFiles.Count} arquivos foram processados!", "SUCCESS");
         dashboardService.AddLogMessage("═══════════════════════════════════════════════════", "SUCCESS");
+        
+        // Mostrar resumo final se houver múltiplos arquivos
+        if (inputFiles.Count > 1)
+        {
+            await Task.Delay(500);
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"[bold cyan1]📊 RESUMO FINAL - {inputFiles.Count} ARQUIVOS PROCESSADOS[/]");
+            AnsiConsole.WriteLine();
+        }
     }
 
     /// <summary>
@@ -118,6 +140,12 @@ public class CsvProcessorService
         dashboardService.AddLogMessage($"Arquivo: {inputFilePath}", "INFO");
         dashboardService.AddLogMessage($"Log: {_context.ExecutionPaths.LogPath}", "INFO");
         dashboardService.AddLogMessage($"Checkpoint: {_context.ExecutionPaths.CheckpointPath}", "INFO");
+
+        // Resetar métricas para o novo arquivo
+        _metricsService.Reset();
+
+        // Tempo de início para este arquivo específico
+        var executionStartTime = DateTime.Now;
 
         // Criar FilterService com as colunas configuradas (após context estar populado)
         var filterService = new FilterService(_context.Configuration.File.Columns);
@@ -186,6 +214,8 @@ public class CsvProcessorService
 
         var batch = new List<CsvRecord>();
         var lineNumber = 0; // Contador de linhas de dados (cabeçalho não conta)
+        
+        // Começar do zero ou do checkpoint se existir
         var totalProcessed = checkpoint?.TotalProcessed ?? 0;
         var totalErrors = checkpoint?.ErrorCount ?? 0;
         var totalSuccess = checkpoint?.SuccessCount ?? 0;
@@ -308,7 +338,7 @@ public class CsvProcessorService
                             totalSuccess,
                             totalErrors,
                             _context,
-                            _executionStartTime);
+                            executionStartTime);
                         lastCheckpointSave = DateTime.Now;
                         dashboardService.AddLogMessage($"Checkpoint salvo - Linha {lineNumber}", "INFO");
                     }
@@ -366,12 +396,7 @@ public class CsvProcessorService
         // Finalizar métricas
         _metricsService.EndProcessing();
 
-        // Limpar console e mostrar dashboard final
-        AnsiConsole.Clear();
-        dashboardService.UpdateOnce();
-        AnsiConsole.WriteLine();
-
-        // Salvar checkpoint final
+        // Salvar checkpoint final marcado como completo
         if (!string.IsNullOrWhiteSpace(_context.ExecutionPaths.CheckpointPath))
         {
             await _checkpointService.SaveCheckpointAsync(
@@ -381,15 +406,12 @@ public class CsvProcessorService
                 totalSuccess,
                 totalErrors,
                 _context,
-                _executionStartTime);
+                executionStartTime,
+                errorMessage: null,
+                isCompleted: true); // Marcar como completo
 
-            AnsiConsole.MarkupLine($"[cyan1]💾 Checkpoint salvo em:[/] [grey]{_context.ExecutionPaths.CheckpointPath}[/]");
+            dashboardService.AddLogMessage($"💾 Checkpoint salvo: {Path.GetFileName(_context.ExecutionPaths.CheckpointPath)}", "SUCCESS");
         }
-
-        AnsiConsole.WriteLine();
-
-        // Exibir dashboard de métricas detalhadas
-        _metricsService.DisplayDashboard();
     }
 
     /// <summary>
