@@ -8,4 +8,5 @@ public class ExecutionPaths
     public string ExecutionId { get; set; } = string.Empty;
     public string LogPath { get; set; } = string.Empty;
     public string CheckpointPath { get; set; } = string.Empty;
+    public string CurrentInputFile { get; set; } = string.Empty;
 }

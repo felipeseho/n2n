@@ -79,7 +79,7 @@ public class MainCommand : AsyncCommand<MainCommandSettings>
             _dashboardService.AddLogMessage("Criando diretórios necessários", "INFO");
             _configurationService.EnsureDirectoriesExist(config);
 
-            // Gerar caminhos de execução
+            // Gerar caminhos de execução iniciais (será atualizado durante o processamento para cada arquivo)
             var executionPaths = _configurationService.GenerateExecutionPaths(config, currentExecutionId);
 
             // Obter endpoint ativo

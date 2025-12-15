@@ -57,6 +57,7 @@ O n2n utiliza [Spectre.Console](https://spectreconsole.net/) para oferecer uma e
 
 ### 🎯 Processamento de Dados
 - ✅ **Leitura inteligente de CSV** com processamento em lotes configuráveis
+- ✅ **Múltiplos arquivos em sequência** com checkpoint e log individuais
 - ✅ **Validação robusta** com regex e formatos de data personalizados
 - ✅ **Filtros avançados** para processar apenas linhas específicas
 - ✅ **20+ transformações de dados** (uppercase, format-cpf, slugify, etc.)
@@ -533,6 +534,7 @@ Otimizações implementadas:
 - 📖 [Quick Start](docs/QUICKSTART.md) - Guia de início rápido em 5 minutos
 - ⚙️ [Argumentos CLI](docs/CLI-ARGUMENTS.md) - Referência completa de comandos
 - 💡 [Exemplos](docs/EXAMPLES.md) - Casos de uso práticos
+- 📁 [Múltiplos Arquivos](docs/MULTIPLE-FILES.md) - Processar vários arquivos em sequência
 - 🎨 [Transformações](docs/TRANSFORMATIONS.md) - Lista completa de transformações
 - 🔍 [Filtros](docs/FILTERS.md) - Guia de filtros de dados
 - 📝 [Changelog](docs/CHANGELOG.md) - Histórico de versões

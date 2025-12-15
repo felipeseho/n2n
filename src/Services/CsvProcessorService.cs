@@ -38,10 +38,87 @@ public class CsvProcessorService
     }
 
     /// <summary>
-    ///     Processa arquivo CSV completo
+    ///     Processa múltiplos arquivos CSV conforme configurado
     /// </summary>
     public async Task ProcessCsvFileAsync(DashboardService dashboardService)
     {
+        var inputFiles = _context.Configuration.File.GetInputFiles();
+
+        if (inputFiles.Count == 0)
+        {
+            dashboardService.AddLogMessage("Nenhum arquivo de entrada configurado", "ERROR");
+            return;
+        }
+
+        dashboardService.AddLogMessage($"Total de {inputFiles.Count} arquivo(s) para processar", "INFO");
+
+        for (var i = 0; i < inputFiles.Count; i++)
+        {
+            var inputFile = inputFiles[i];
+            dashboardService.AddLogMessage($"═══════════════════════════════════════════════════", "INFO");
+            dashboardService.AddLogMessage($"Processando arquivo {i + 1}/{inputFiles.Count}: {Path.GetFileName(inputFile)}", "INFO");
+            dashboardService.AddLogMessage($"═══════════════════════════════════════════════════", "INFO");
+
+            await ProcessSingleCsvFileAsync(dashboardService, inputFile);
+
+            if (i < inputFiles.Count - 1)
+            {
+                dashboardService.AddLogMessage($"Arquivo {i + 1} concluído. Próximo arquivo...", "SUCCESS");
+                await Task.Delay(1000); // Pequena pausa entre arquivos
+            }
+        }
+
+        dashboardService.AddLogMessage("═══════════════════════════════════════════════════", "SUCCESS");
+        dashboardService.AddLogMessage($"Todos os {inputFiles.Count} arquivos foram processados!", "SUCCESS");
+        dashboardService.AddLogMessage("═══════════════════════════════════════════════════", "SUCCESS");
+    }
+
+    /// <summary>
+    ///     Processa um único arquivo CSV
+    /// </summary>
+    private async Task ProcessSingleCsvFileAsync(DashboardService dashboardService, string inputFilePath)
+    {
+        // Verificar se arquivo existe
+        if (!File.Exists(inputFilePath))
+        {
+            dashboardService.AddLogMessage($"⚠️  Arquivo não encontrado: {inputFilePath}", "ERROR");
+
+            // Gerar paths específicos para este arquivo
+            var executionId = _context.CommandLineOptions.ExecutionId ?? Guid.NewGuid().ToString();
+            var configService = new ConfigurationService();
+            var executionPaths = configService.GenerateExecutionPaths(_context.Configuration, executionId, inputFilePath);
+
+            // Criar checkpoint e log registrando que o arquivo não foi encontrado
+            await _loggingService.LogError(
+                executionPaths.LogPath,
+                new CsvRecord { LineNumber = 0, Data = new Dictionary<string, string>() },
+                404,
+                $"Arquivo não encontrado: {inputFilePath}",
+                Array.Empty<string>());
+
+            await _checkpointService.SaveCheckpointAsync(
+                executionPaths.CheckpointPath,
+                0,
+                0,
+                0,
+                1,
+                _context,
+                DateTime.Now,
+                $"Arquivo não encontrado: {inputFilePath}");
+
+            dashboardService.AddLogMessage($"Checkpoint e log criados para arquivo não encontrado", "WARNING");
+            return;
+        }
+
+        // Atualizar executionPaths com o arquivo atual
+        var currentExecutionId = _context.CommandLineOptions.ExecutionId ?? Guid.NewGuid().ToString();
+        var currentConfigService = new ConfigurationService();
+        _context.ExecutionPaths = currentConfigService.GenerateExecutionPaths(_context.Configuration, currentExecutionId, inputFilePath);
+
+        dashboardService.AddLogMessage($"Arquivo: {inputFilePath}", "INFO");
+        dashboardService.AddLogMessage($"Log: {_context.ExecutionPaths.LogPath}", "INFO");
+        dashboardService.AddLogMessage($"Checkpoint: {_context.ExecutionPaths.CheckpointPath}", "INFO");
+
         // Criar FilterService com as colunas configuradas (após context estar populado)
         var filterService = new FilterService(_context.Configuration.File.Columns);
 
@@ -69,13 +146,13 @@ public class CsvProcessorService
             dashboardService.AddLogMessage("Contando linhas do arquivo CSV...", "INFO");
             await Task.Run(() =>
             {
-                totalLines = CountCsvLines(_context.Configuration.File.InputPath);
+                totalLines = CountCsvLines(inputFilePath);
                 _metricsService.StartProcessing(totalLines);
             });
             dashboardService.AddLogMessage($"Total de {totalLines:N0} linhas encontradas", "SUCCESS");
         }
 
-        using var reader = new StreamReader(_context.Configuration.File.InputPath);
+        using var reader = new StreamReader(inputFilePath);
         using var csv = new CsvReader(reader, csvConfig);
 
         // Ler cabeçalho

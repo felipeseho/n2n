@@ -5,6 +5,67 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## 0.12.0 - 2025-12-15
+
+### ✨ Adicionado
+
+#### 📁 Processamento de Múltiplos Arquivos
+
+**Nova funcionalidade: processar vários arquivos CSV em sequência.**
+
+Agora você pode configurar uma lista de arquivos para serem processados em ordem, cada um com seu próprio checkpoint e log.
+
+**Configuração com `inputPaths` (novo):**
+```yaml
+file:
+  inputPaths:
+    - "data/arquivo1.csv"
+    - "data/arquivo2.csv"
+    - "data/arquivo3.csv"
+  # ... demais configurações
+```
+
+**Características:**
+- ✅ Cada arquivo tem checkpoint e log individual
+- ✅ Processamento sequencial na ordem configurada
+- ✅ Arquivos não encontrados são registrados e pulados
+- ✅ Nomenclatura automática: `checkpoint_{execId}_{fileName}.json`
+- ✅ Retrocompatibilidade total com `inputPath` (singular)
+
+**Exemplo de arquivos gerados:**
+```
+checkpoints/
+  checkpoint_abc123_arquivo1.json
+  checkpoint_abc123_arquivo2.json
+  checkpoint_abc123_arquivo3.json
+logs/
+  process_abc123_arquivo1.log
+  process_abc123_arquivo2.log
+  process_abc123_arquivo3.log
+```
+
+📖 **Documentação completa**: [MULTIPLE-FILES.md](MULTIPLE-FILES.md)
+
+### 🔧 Modificado
+
+- **FileConfiguration**: Adicionada propriedade `InputPaths` (lista) e método `GetInputFiles()`
+- **ExecutionPaths**: Adicionada propriedade `CurrentInputFile` para rastrear arquivo atual
+- **ConfigurationService**: `GenerateExecutionPaths()` agora aceita parâmetro opcional `inputFile`
+- **ConfigurationService**: Validação não verifica mais existência de arquivos (tratado durante processamento)
+- **CheckpointService**: `SaveCheckpointAsync()` agora aceita parâmetro opcional `errorMessage`
+- **CsvProcessorService**: `ProcessCsvFileAsync()` agora itera sobre múltiplos arquivos
+- **CsvProcessorService**: Novo método privado `ProcessSingleCsvFileAsync()` para processar arquivo individual
+
+### 🛡️ Comportamento com Arquivos Não Encontrados
+
+Quando um arquivo da lista não é encontrado:
+1. ⚠️  Mensagem de aviso é exibida no console
+2. 📝 Log de erro é criado (HTTP 404)
+3. 💾 Checkpoint é salvo com `errorCount = 1` e mensagem descritiva
+4. ➡️  Processamento continua para o próximo arquivo
+
+---
+
 ## 0.11.0 - 2025-12-06
 
 ### ⚠️ BREAKING CHANGES

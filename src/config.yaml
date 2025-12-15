@@ -1,5 +1,16 @@
 file:
-  inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
+  # Opção 1: Processar um único arquivo (compatibilidade)
+  # inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
+  
+  # Opção 2: Processar múltiplos arquivos em ordem (NOVO)
+  # Cada arquivo terá seu próprio checkpoint e log
+  # Arquivos não encontrados serão registrados e pulados
+  inputPaths:
+    - "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
+    # - "data/input1.csv"
+    # - "data/input2.csv"
+    # - "data/input3.csv"
+  
   batchLines: 1
   startLine: 1
   maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)

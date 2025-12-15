@@ -89,11 +89,16 @@ public class ConfigurationService
     /// </summary>
     public bool ValidateConfiguration(Configuration config)
     {
-        if (!File.Exists(config.File.InputPath))
+        var inputFiles = config.File.GetInputFiles();
+
+        if (inputFiles.Count == 0)
         {
-            Console.WriteLine($"Arquivo CSV não encontrado: {config.File.InputPath}");
+            Console.WriteLine("Nenhum arquivo de entrada configurado. Use 'inputPath' ou 'inputPaths'");
             return false;
         }
+
+        // Não validar existência dos arquivos aqui - será tratado durante o processamento
+        // para permitir registrar arquivos não encontrados no log e checkpoint
 
         // Deve haver pelo menos um endpoint configurado
         if (config.Endpoints.Count == 0)
@@ -177,13 +182,22 @@ public class ConfigurationService
     /// <summary>
     ///     Gera os caminhos de arquivos para uma execução específica
     /// </summary>
-    public ExecutionPaths GenerateExecutionPaths(Configuration config, string executionId)
+    public ExecutionPaths GenerateExecutionPaths(Configuration config, string executionId, string? inputFile = null)
     {
+        var fileIdentifier = "";
+        if (!string.IsNullOrWhiteSpace(inputFile))
+        {
+            // Gerar identificador baseado no nome do arquivo (sem extensão e sem caminho)
+            var fileName = Path.GetFileNameWithoutExtension(inputFile);
+            fileIdentifier = $"_{fileName}";
+        }
+
         return new ExecutionPaths
         {
             ExecutionId = executionId,
-            LogPath = Path.Combine(config.File.LogDirectory, $"process_{executionId}.log"),
-            CheckpointPath = Path.Combine(config.File.CheckpointDirectory, $"checkpoint_{executionId}.json")
+            LogPath = Path.Combine(config.File.LogDirectory, $"process_{executionId}{fileIdentifier}.log"),
+            CheckpointPath = Path.Combine(config.File.CheckpointDirectory, $"checkpoint_{executionId}{fileIdentifier}.json"),
+            CurrentInputFile = inputFile ?? string.Empty
         };
     }
 

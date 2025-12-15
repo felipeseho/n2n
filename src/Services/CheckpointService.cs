@@ -18,7 +18,8 @@ public class CheckpointService
         int successCount, 
         int errorCount,
         AppExecutionContext context,
-        DateTime executionStartTime)
+        DateTime executionStartTime,
+        string? errorMessage = null)
     {
         var checkpoint = new Checkpoint
         {
@@ -36,7 +37,7 @@ public class CheckpointService
             // Configurações
             Configuration = new CheckpointConfiguration
             {
-                InputPath = context.Configuration.File.InputPath,
+                InputPath = context.ExecutionPaths.CurrentInputFile ?? context.Configuration.File.InputPath,
                 ConfigPath = context.CommandLineOptions.ConfigPath ?? "config.yaml",
                 BatchLines = context.Configuration.File.BatchLines,
                 Delimiter = context.Configuration.File.CsvDelimiter,
@@ -58,10 +59,15 @@ public class CheckpointService
             }
         };
 
-        var json = JsonSerializer.Serialize(checkpoint, new JsonSerializerOptions
+        // Se há mensagem de erro (arquivo não encontrado, etc), adicionar ao JSON
+        var jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true
-        });
+        };
+
+        var json = errorMessage != null
+            ? JsonSerializer.Serialize(new { checkpoint, errorMessage }, jsonOptions)
+            : JsonSerializer.Serialize(checkpoint, jsonOptions);
 
         // Criar diretório se não existir
         var directory = Path.GetDirectoryName(checkpointPath);
