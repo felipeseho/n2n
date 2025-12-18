@@ -1,21 +1,20 @@
 file:
-  # Opção 1: Processar um único arquivo (compatibilidade)
-  # inputPath: "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
   
-  # Opção 2: Processar múltiplos arquivos em ordem (NOVO)
-  # Cada arquivo terá seu próprio checkpoint e log
-  # Arquivos não encontrados serão registrados e pulados
   inputPaths:
-    - "C:/Users/jose.fagundes.EXA-ARKNT356196/Projects/repositories/github/n2n/data/amostra-px-tim-exacloud-v2.csv"
-    # - "data/input1.csv"
-    # - "data/input2.csv"
-    # - "data/input3.csv"
-  
-  batchLines: 1
-  startLine: 1
-  maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_afagu_tombamento_conteudo_20251216_0_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_afagu_tombamento_conteudo_20251216_1_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_algar_etica_tombamento_conteudo_20251216_0_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_algar_etica_tombamento_conteudo_20251216_1_000000000000.csv"
+    - "/Users/felipeseho/Desktop/bases/partners_rollover_brisanet_tombamento_conteudo_20251216_0_000000000000.csv"
+    - "/Users/felipeseho/Desktop/bases/partners_rollover_brisanet_tombamento_conteudo_20251216_1_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_cariap_tombamento_conteudo_20251216_0_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_cariap_tombamento_conteudo_20251216_1_000000000000.csv"
+ 
+  batchLines: 1200
+  startLine: 2
+  #maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
-  csvDelimiter: ","
+  csvDelimiter: ";"
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
   columns:
     - column: "name"
@@ -28,57 +27,51 @@ file:
       type: "string"
     - column: "msisdn"
       type: "string"
+    - column: partner
+      type: string
     - column: "newMsisdn"
       type: "string"
     - column: "subscriptionId"
       type: "string"
     - column: "newSubscriptionId"
       type: "string"
-    - column: "subPartnerId"
+    - column: "subPartnerId" # Campo com "P" maiúsculo conforme o CSV fornecido (diferente dos models repassados)
       type: "string"
     - column: "token"
       type: "string"
     - column: "expiryDate"
       type: "date"
-      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+      format: "dd/MM/yyyy HH:mm:ss"
     - column: "nextBillDate"
       type: "date"
-      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+      format: "dd/MM/yyyy HH:mm:ss"
     - column: "chargingResult"
-      format: "string"
+      type: "string"
     - column: "cents"
-      format: "string"
+      type: "string"
     - column: "campaign"
-      format: "string"
+      type: "string"
     - column: "productId"
-      format: "string"
+      type: "string"
     - column: "serviceId"
-      format: "string"
+      type: "string"
     - column: "la"
-      format: "string"
+      type: "string"
     - column: "text"
-      format: "string"
+      type: "string"
     - column: "args"
-      format: "string"
+      type: "string"
     - column: "raw"
-      format: "string"
+      type: "string"
     - column: "eventDate"
       type: "date"
-      format: "yyyy-MM-ddTHH:mm:ss.fffZ"
+      format: "yyyy-MM-dd HH:mm:ss" # Campo já com o tratamento sem o Z no final e sem o milissegundos
 
-# Nome da coluna CSV que contém o nome do endpoint a ser usado (opcional)
-# Se configurada, cada linha pode especificar qual endpoint usar
-# endpointColumnName: "Endpoint"
-
-# Endpoint padrão a ser usado quando não especificado via --endpoint-name ou coluna CSV (opcional)
-# Se não configurado e houver apenas 1 endpoint, ele será usado automaticamente
 defaultEndpoint: "subscription_create"
 
-# Lista de endpoints nomeados (obrigatório - deve ter pelo menos um)
-# Cada endpoint tem sua própria URL, autenticação e mapeamento
 endpoints:
   - name: "subscription_create"
-    endpointUrl: "https://api-hub-homol.whitelabel.com.br/hub-connect-v2/v1/hub-connect-api-v2/events/ingest"
+    endpointUrl: "https://api-corporativo.whitelabel.com.br/hub-connect-tomb1/v1/hub-connect-api-tomb1/events/ingest"
     # endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
@@ -87,27 +80,49 @@ endpoints:
     requestTimeout: 30
     retryAttempts: 3
     retryDelaySeconds: 5
-    maxRequestsPerSecond: 20
+    maxRequestsPerSecond: 600
     mapping:
       - attribute: "event"
         fixedValue: "subscription_create"
       - attribute: "eventDate"
-        csvColumn: "start_date"
-        transform: "date-format:yyyy-MM-ddT00:00:00Z"
+        csvColumn: "eventDate"
       - attribute: "partner"
-        fixedValue: "partner"
+        csvColumn: "partner"
       - attribute: "path"
         fixedValue: "/api/v1/events/ingest"
-      - attribute: "payload.campaign"
-        csvColumn: "campaign"
-      - attribute: "payload.cpf"
-        csvColumn: "cpf"
-      - attribute: "payload.cnpj"
-        csvColumn: "cnpj"
+      - attribute: "payload.name"
+        csvColumn: "name"
+        transform: "empty-to-null"
       - attribute: "payload.email"
         csvColumn: "email"
-        transform: "lowercase"
+        transform: "empty-to-null"
+      - attribute: "payload.cpf"
+        csvColumn: "cpf"
+        transform: "empty-to-null"
+      - attribute: "payload.cnpj"
+        csvColumn: "cnpj"
+        transform: "empty-to-null"
       - attribute: "payload.msisdn"
         csvColumn: "msisdn"
+        transform: "empty-to-null"
+      - attribute: "payload.newMsisdn"
+        csvColumn: "newMsisdn"
+        transform: "empty-to-null"
       - attribute: "payload.subscriptionId"
-        csvColumn: "subscription_id"
+        csvColumn: "subscriptionId"
+        transform: "empty-to-null"
+      - attribute: "payload.newSubscriptionId"
+        csvColumn: "newSubscriptionId"
+        transform: "empty-to-null"
+      - attribute: "payload.subpartnerId"
+        csvColumn: "subpartnerId"
+        transform: "empty-to-null"
+      - attribute: "payload.expiryDate"
+        csvColumn: "expiryDate"
+      - attribute: "payload.campaign"
+        csvColumn: "campaign"
+        transform: "lowercase"
+      - attribute: "payload.productId"
+        csvColumn: "productId"
+      - attribute: "payload.serviceId"
+        csvColumn: "serviceId"
