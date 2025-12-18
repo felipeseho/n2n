@@ -5,14 +5,14 @@ file:
     # - "/Users/felipeseho/Desktop/bases/partners_rollover_afagu_tombamento_conteudo_20251216_1_000000000000.csv"
     # - "/Users/felipeseho/Desktop/bases/partners_rollover_algar_etica_tombamento_conteudo_20251216_0_000000000000.csv"
     # - "/Users/felipeseho/Desktop/bases/partners_rollover_algar_etica_tombamento_conteudo_20251216_1_000000000000.csv"
-    - "/Users/felipeseho/Desktop/bases/partners_rollover_brisanet_tombamento_conteudo_20251216_0_000000000000.csv"
-    - "/Users/felipeseho/Desktop/bases/partners_rollover_brisanet_tombamento_conteudo_20251216_1_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_brisanet_tombamento_conteudo_20251216_0_000000000000.csv"
+    # - "/Users/felipeseho/Desktop/bases/partners_rollover_brisanet_tombamento_conteudo_20251216_1_000000000000.csv"
     # - "/Users/felipeseho/Desktop/bases/partners_rollover_cariap_tombamento_conteudo_20251216_0_000000000000.csv"
     # - "/Users/felipeseho/Desktop/bases/partners_rollover_cariap_tombamento_conteudo_20251216_1_000000000000.csv"
  
   batchLines: 1200
-  startLine: 2
-  #maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
+  startLine: 1
+  # maxLines:  # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
   csvDelimiter: ";"
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
@@ -71,7 +71,7 @@ defaultEndpoint: "subscription_create"
 
 endpoints:
   - name: "subscription_create"
-    endpointUrl: "https://api-corporativo.whitelabel.com.br/hub-connect-tomb1/v1/hub-connect-api-tomb1/events/ingest"
+    endpointUrl: "https://api-corporativo.whitelabel.com.br/hub-connect/v2/hub-connect-api/events/ingest"
     # endpointUrl: "https://test-seho.requestcatcher.com/"
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
