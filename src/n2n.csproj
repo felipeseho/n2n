@@ -35,10 +35,6 @@
         <None Update="config-timempresas-combo.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
-
-        <None Update="config-brisanet-full.yaml">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
         
     </ItemGroup>
 
