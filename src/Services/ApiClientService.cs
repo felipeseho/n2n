@@ -141,7 +141,7 @@ public class ApiClientService
             if (_context.IsDryRun)
             {
                 var endpointInfo = string.IsNullOrWhiteSpace(endpointName) ? "default" : endpointName;
-                Console.WriteLine($"[DRY RUN] Linha {record.LineNumber} [endpoint: {endpointInfo}]: {json}");
+                _loggingService.LogInfo($"[DRY RUN] Linha {record.LineNumber} [endpoint: {endpointInfo}]: {json}");
                 return true;
             }
 
@@ -235,9 +235,7 @@ public class ApiClientService
 
                 requestTimer.Stop();
 
-                // Registrar métricas
                 _metricsService.RecordResponseTime(requestTimer.ElapsedMilliseconds);
-                _metricsService.RecordHttpStatusCode((int)response.StatusCode);
 
                 if (attempts > 1) _metricsService.RecordRetry();
 
@@ -247,13 +245,14 @@ public class ApiClientService
                     if ((int)response.StatusCode >= 500 || response.StatusCode == HttpStatusCode.RequestTimeout)
                         if (attempts < endpointConfig.RetryAttempts)
                         {
-                            Console.WriteLine(
+                            _loggingService.LogWarning(
                                 $"Tentativa {attempts}/{endpointConfig.RetryAttempts} falhou (HTTP {(int)response.StatusCode}). Aguardando {endpointConfig.RetryDelaySeconds}s...");
                             await Task.Delay(endpointConfig.RetryDelaySeconds * 1000);
                             requestTimer.Restart();
                             continue;
                         }
 
+                    _metricsService.RecordHttpStatusCode((int)response.StatusCode);
                     var errorMessage = await response.Content.ReadAsStringAsync();
                     await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, (int)response.StatusCode,
                         errorMessage, headers);
@@ -261,6 +260,7 @@ public class ApiClientService
                     return false;
                 }
 
+                _metricsService.RecordHttpStatusCode((int)response.StatusCode);
                 _metricsService.RecordSuccess();
                 return true;
             }
@@ -269,7 +269,7 @@ public class ApiClientService
                 lastException = ex;
                 if (attempts < endpointConfig.RetryAttempts)
                 {
-                    Console.WriteLine(
+                    _loggingService.LogWarning(
                         $"Tentativa {attempts}/{endpointConfig.RetryAttempts} falhou ({ex.Message}). Aguardando {endpointConfig.RetryDelaySeconds}s...");
                     await Task.Delay(endpointConfig.RetryDelaySeconds * 1000);
                     requestTimer.Restart();
@@ -280,7 +280,7 @@ public class ApiClientService
                 lastException = ex;
                 if (attempts < endpointConfig.RetryAttempts)
                 {
-                    Console.WriteLine(
+                    _loggingService.LogWarning(
                         $"Tentativa {attempts}/{endpointConfig.RetryAttempts} timeout. Aguardando {endpointConfig.RetryDelaySeconds}s...");
                     await Task.Delay(endpointConfig.RetryDelaySeconds * 1000);
                     requestTimer.Restart();
