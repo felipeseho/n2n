@@ -114,17 +114,17 @@ public class ApiClientService
             var endpointName = _context.CommandLineOptions.EndpointName; // Prioridade 1: Argumento linha de comando
 
             // Prioridade 2: Roteamento por mapa de valores (routing)
-            if (string.IsNullOrWhiteSpace(endpointName) && _context.Configuration.Routing != null)
+            if (string.IsNullOrWhiteSpace(endpointName) && _context.Configuration.Api.Routing != null)
             {
-                var routing = _context.Configuration.Routing;
+                var routing = _context.Configuration.Api.Routing;
                 if (record.Data.TryGetValue(routing.Column, out var columnValue) &&
                     routing.Map.TryGetValue(columnValue, out var mappedEndpoint))
                     endpointName = mappedEndpoint;
             }
 
             // Prioridade 3: Coluna CSV cujo valor é diretamente o nome do endpoint
-            if (string.IsNullOrWhiteSpace(endpointName) && !string.IsNullOrWhiteSpace(_context.Configuration.EndpointColumnName))
-                if (record.Data.TryGetValue(_context.Configuration.EndpointColumnName, out var csvEndpointName))
+            if (string.IsNullOrWhiteSpace(endpointName) && !string.IsNullOrWhiteSpace(_context.Configuration.Api.EndpointColumnName))
+                if (record.Data.TryGetValue(_context.Configuration.Api.EndpointColumnName, out var csvEndpointName))
                     endpointName = csvEndpointName;
 
             // Selecionar configuração de API apropriada
@@ -163,26 +163,26 @@ public class ApiClientService
         // Se não há nome de endpoint especificado, usar endpoint padrão configurado
         if (string.IsNullOrWhiteSpace(endpointName))
         {
-            if (!string.IsNullOrWhiteSpace(_context.Configuration.DefaultEndpoint))
-                endpointName = _context.Configuration.DefaultEndpoint;
-            else if (_context.Configuration.Endpoints.Count == 1)
+            if (!string.IsNullOrWhiteSpace(_context.Configuration.Api.DefaultEndpoint))
+                endpointName = _context.Configuration.Api.DefaultEndpoint;
+            else if (_context.Configuration.Api.Endpoints.Count == 1)
                 // Se há apenas um endpoint, usar ele
-                return _context.Configuration.Endpoints[0];
+                return _context.Configuration.Api.Endpoints[0];
             else
                 throw new InvalidOperationException(
                     "Nome do endpoint não especificado. Use --endpoint-name, configure 'endpointColumnName' no CSV, " +
                     "ou defina 'defaultEndpoint' na configuração. " +
-                    $"Endpoints disponíveis: {string.Join(", ", _context.Configuration.Endpoints.Select(e => e.Name))}");
+                    $"Endpoints disponíveis: {string.Join(", ", _context.Configuration.Api.Endpoints.Select(e => e.Name))}");
         }
 
         // Buscar endpoint pelo nome
-        var endpoint = _context.Configuration.Endpoints.FirstOrDefault(e =>
+        var endpoint = _context.Configuration.Api.Endpoints.FirstOrDefault(e =>
             e.Name.Equals(endpointName, StringComparison.OrdinalIgnoreCase));
 
         if (endpoint == null)
             throw new InvalidOperationException(
                 $"Endpoint '{endpointName}' não encontrado na configuração. " +
-                $"Endpoints disponíveis: {string.Join(", ", _context.Configuration.Endpoints.Select(e => e.Name))}");
+                $"Endpoints disponíveis: {string.Join(", ", _context.Configuration.Api.Endpoints.Select(e => e.Name))}");
 
         return endpoint;
     }

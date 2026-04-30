@@ -413,7 +413,7 @@ public class DashboardService(
     {
         var endpoint = context.ActiveEndpoint;
         var safeUrl = Markup.Escape(endpoint.EndpointUrl);
-        var defaultEndpoint = context.Configuration.DefaultEndpoint ?? "—";
+        var defaultEndpoint = context.Configuration.Api.DefaultEndpoint ?? "—";
         var isDefault = endpoint.Name.Equals(defaultEndpoint, StringComparison.OrdinalIgnoreCase);
         var defaultLabel = isDefault ? "[grey](padrão)[/]" : $"[grey]padrão: {defaultEndpoint}[/]";
 

@@ -65,28 +65,28 @@ public class ConfigurationService
         // Se não há nome de endpoint especificado, usar endpoint padrão configurado
         if (string.IsNullOrWhiteSpace(endpointName))
         {
-            if (!string.IsNullOrWhiteSpace(config.DefaultEndpoint))
-                endpointName = config.DefaultEndpoint;
-            else if (config.Endpoints.Count == 1)
-                return config.Endpoints[0];
-            else if (config.Routing != null)
+            if (!string.IsNullOrWhiteSpace(config.Api.DefaultEndpoint))
+                endpointName = config.Api.DefaultEndpoint;
+            else if (config.Api.Endpoints.Count == 1)
+                return config.Api.Endpoints[0];
+            else if (config.Api.Routing != null)
                 // Com roteamento dinâmico, o endpoint real é resolvido por linha — retorna o primeiro para inicialização
-                return config.Endpoints[0];
+                return config.Api.Endpoints[0];
             else
                 throw new InvalidOperationException(
                     "Nome do endpoint não especificado. Use --endpoint-name, configure 'endpointColumnName' no CSV, " +
                     "ou defina 'defaultEndpoint' na configuração. " +
-                    $"Endpoints disponíveis: {string.Join(", ", config.Endpoints.Select(e => e.Name))}");
+                    $"Endpoints disponíveis: {string.Join(", ", config.Api.Endpoints.Select(e => e.Name))}");
         }
 
         // Buscar endpoint pelo nome
-        var endpoint = config.Endpoints.FirstOrDefault(e =>
+        var endpoint = config.Api.Endpoints.FirstOrDefault(e =>
             e.Name.Equals(endpointName, StringComparison.OrdinalIgnoreCase));
 
         if (endpoint == null)
             throw new InvalidOperationException(
                 $"Endpoint '{endpointName}' não encontrado na configuração. " +
-                $"Endpoints disponíveis: {string.Join(", ", config.Endpoints.Select(e => e.Name))}");
+                $"Endpoints disponíveis: {string.Join(", ", config.Api.Endpoints.Select(e => e.Name))}");
 
         return endpoint;
     }
@@ -108,14 +108,14 @@ public class ConfigurationService
         // para permitir registrar arquivos não encontrados no log e checkpoint
 
         // Deve haver pelo menos um endpoint configurado
-        if (config.Endpoints.Count == 0)
+        if (config.Api.Endpoints.Count == 0)
         {
-            Console.WriteLine("É necessário configurar pelo menos um endpoint na lista 'endpoints'");
+            Console.WriteLine("É necessário configurar pelo menos um endpoint na lista 'api.endpoints'");
             return false;
         }
 
         // Validar cada endpoint
-        foreach (var endpoint in config.Endpoints)
+        foreach (var endpoint in config.Api.Endpoints)
         {
             if (string.IsNullOrWhiteSpace(endpoint.Name))
             {
@@ -133,15 +133,15 @@ public class ConfigurationService
         }
 
         // Validar endpoint padrão se especificado
-        if (!string.IsNullOrWhiteSpace(config.DefaultEndpoint))
+        if (!string.IsNullOrWhiteSpace(config.Api.DefaultEndpoint))
         {
-            var defaultExists = config.Endpoints.Any(e =>
-                e.Name.Equals(config.DefaultEndpoint, StringComparison.OrdinalIgnoreCase));
+            var defaultExists = config.Api.Endpoints.Any(e =>
+                e.Name.Equals(config.Api.DefaultEndpoint, StringComparison.OrdinalIgnoreCase));
 
             if (!defaultExists)
             {
-                Console.WriteLine($"Endpoint padrão '{config.DefaultEndpoint}' não encontrado na lista de endpoints.");
-                Console.WriteLine($"Endpoints disponíveis: {string.Join(", ", config.Endpoints.Select(e => e.Name))}");
+                Console.WriteLine($"Endpoint padrão '{config.Api.DefaultEndpoint}' não encontrado na lista de endpoints.");
+                Console.WriteLine($"Endpoints disponíveis: {string.Join(", ", config.Api.Endpoints.Select(e => e.Name))}");
                 return false;
             }
         }
