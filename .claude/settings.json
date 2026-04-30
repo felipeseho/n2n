@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:spectreconsole.net)",
+      "Bash(gh api *)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

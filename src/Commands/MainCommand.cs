@@ -24,7 +24,7 @@ public class MainCommand : AsyncCommand<MainCommandSettings>
         _csvProcessorService = csvProcessorService;
     }
 
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         MainCommandSettings settings,
         CancellationToken cancellationToken)
