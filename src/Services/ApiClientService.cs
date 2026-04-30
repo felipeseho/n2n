@@ -113,7 +113,16 @@ public class ApiClientService
             // Determinar qual endpoint usar
             var endpointName = _context.CommandLineOptions.EndpointName; // Prioridade 1: Argumento linha de comando
 
-            // Prioridade 2: Coluna CSV (se configurada)
+            // Prioridade 2: Roteamento por mapa de valores (routing)
+            if (string.IsNullOrWhiteSpace(endpointName) && _context.Configuration.Routing != null)
+            {
+                var routing = _context.Configuration.Routing;
+                if (record.Data.TryGetValue(routing.Column, out var columnValue) &&
+                    routing.Map.TryGetValue(columnValue, out var mappedEndpoint))
+                    endpointName = mappedEndpoint;
+            }
+
+            // Prioridade 3: Coluna CSV cujo valor é diretamente o nome do endpoint
             if (string.IsNullOrWhiteSpace(endpointName) && !string.IsNullOrWhiteSpace(_context.Configuration.EndpointColumnName))
                 if (record.Data.TryGetValue(_context.Configuration.EndpointColumnName, out var csvEndpointName))
                     endpointName = csvEndpointName;
@@ -210,6 +219,16 @@ public class ApiClientService
                     response = await httpClient.PostAsync(resolvedUrl, content);
                 else if (endpointConfig.Method.ToUpper() == "PUT")
                     response = await httpClient.PutAsync(resolvedUrl, content);
+                else if (endpointConfig.Method.ToUpper() == "DELETE")
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Delete, resolvedUrl) { Content = content };
+                    response = await httpClient.SendAsync(request);
+                }
+                else if (endpointConfig.Method.ToUpper() == "PATCH")
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Patch, resolvedUrl) { Content = content };
+                    response = await httpClient.SendAsync(request);
+                }
                 else
                     throw new NotSupportedException($"Método HTTP '{endpointConfig.Method}' não suportado");
 

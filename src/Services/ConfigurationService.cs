@@ -68,7 +68,9 @@ public class ConfigurationService
             if (!string.IsNullOrWhiteSpace(config.DefaultEndpoint))
                 endpointName = config.DefaultEndpoint;
             else if (config.Endpoints.Count == 1)
-                // Se há apenas um endpoint, usar ele
+                return config.Endpoints[0];
+            else if (config.Routing != null)
+                // Com roteamento dinâmico, o endpoint real é resolvido por linha — retorna o primeiro para inicialização
                 return config.Endpoints[0];
             else
                 throw new InvalidOperationException(

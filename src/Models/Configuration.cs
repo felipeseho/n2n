@@ -17,4 +17,9 @@ public class Configuration
     ///     Nome do endpoint padrão a ser usado quando não especificado
     /// </summary>
     public string? DefaultEndpoint { get; set; }
+
+    /// <summary>
+    ///     Roteamento dinâmico: mapeia valores de uma coluna CSV para nomes de endpoints
+    /// </summary>
+    public EndpointRouting? Routing { get; set; }
 }

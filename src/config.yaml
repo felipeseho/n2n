@@ -7,7 +7,7 @@ file:
   
   batchLines: 1
   startLine: 1
-  maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
+  maxLines: 2 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
   csvDelimiter: ","
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
@@ -34,7 +34,11 @@ file:
       type: "date"
       format: "yyyy-MM-dd'T'HH:mm:ss"
 
-defaultEndpoint: "subscription_create"
+routing:
+  column: "status"
+  map:
+    "I": "subscription_create"
+    "C": "subscription_delete"
 
 endpoints:
   - name: "subscription_create"

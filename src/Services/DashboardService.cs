@@ -106,6 +106,12 @@ public class DashboardService(
                     {
                         var layout = CreateLayout();
                         ctx.UpdateTarget(layout);
+                        await Task.Delay(500, cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Cancelamento normal ao fim do processamento
+                        break;
                     }
                     catch (ArgumentOutOfRangeException)
                     {
@@ -113,12 +119,12 @@ public class DashboardService(
                     }
                     catch (Exception ex)
                     {
-                        // Log erro mas continua
                         _logMessages.Add($"[red]Erro ao atualizar dashboard: {ex.Message}[/]");
                     }
-                    
-                    await Task.Delay(500, cancellationToken); // Atualizar a cada 500ms
                 }
+
+                // Atualizar uma última vez para mostrar o estado final (100%)
+                try { ctx.UpdateTarget(CreateLayout()); } catch { /* ignorar */ }
                 });
         }
         catch (Exception ex)
