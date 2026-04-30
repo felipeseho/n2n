@@ -1,13 +1,15 @@
 file:
   
   inputPaths:
-    - "/Users/felipeseho/Desktop/bases/partners_rollover_algar-etica_tombamento_20251218_seguranca_0_000000000000.csv"
+#    - "/Users/felipeseho/Desktop/bases/fastshop_rollover_2026-04-29.csv"
+#    - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
+    - "/Users/felipeseho/Desktop/bases/unifique_rollover_2026-04-29.csv"
   
   batchLines: 1
   startLine: 1
   maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
-  csvDelimiter: ";"
+  csvDelimiter: ","
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
   columns:
     - column: "subscription_id"
@@ -30,7 +32,7 @@ file:
       type: "string"
     - column: "event_date"
       type: "date"
-      format: "yyyy-MM-dd'T'HH:mm:ss'Z'"
+      format: "yyyy-MM-dd'T'HH:mm:ss"
 
 defaultEndpoint: "subscription_create"
 
@@ -38,8 +40,8 @@ endpoints:
   - name: "subscription_create"
     
     ###### TROCAR PARTNER NA URL
-    # endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/{oartner}/v2/subscription"
-    endpointUrl: "https://test-seho.requestcatcher.com/"
+    # endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
+    endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
 
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
@@ -68,7 +70,29 @@ endpoints:
         transform: "empty-to-null"
       - attribute: "partner"
         csvColumn: "partner"
+        transform: "empty-to-null"
       - attribute: "subpartner_id"
         csvColumn: "subpartner_id"
+        transform: "empty-to-null"
       - attribute: "subscriptionStartDate"
         csvColumn: "event_date"
+
+  - name: "subscription_delete"
+    
+    ###### TROCAR PARTNER NA URL
+    #endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
+    endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
+
+    # headers:
+    #   Authorization: "Bearer seu-token-aqui"
+    #   X-Custom-Header: "valor-customizado"
+    method: "DELETE"
+    requestTimeout: 30
+    retryAttempts: 3
+    retryDelaySeconds: 5
+    maxRequestsPerSecond: 1
+    mapping:
+      - attribute: "subscription_id"
+        csvColumn: "subscription_id"
+      - attribute: "campaign"
+        csvColumn: "campaign"

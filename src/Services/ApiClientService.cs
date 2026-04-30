@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using n2n.Models;
 using n2n.Utils;
 
@@ -176,12 +177,17 @@ public class ApiClientService
         return endpoint;
     }
 
+    private static string ResolveUrl(string urlTemplate, CsvRecord record) =>
+        Regex.Replace(urlTemplate, @"\{(\w+)\}", m =>
+            record.Data.TryGetValue(m.Groups[1].Value, out var v) ? v : m.Value);
+
     /// <summary>
     ///     Envia requisição com retry policy
     /// </summary>
     private async Task<bool> SendWithRetryAsync(HttpClient httpClient, NamedEndpoint endpointConfig,
         string json, CsvRecord record, string[] headers)
     {
+        var resolvedUrl = ResolveUrl(endpointConfig.EndpointUrl, record);
         var attempts = 0;
         Exception? lastException = null;
         var requestTimer = Stopwatch.StartNew();
@@ -201,9 +207,9 @@ public class ApiClientService
 
                 HttpResponseMessage response;
                 if (endpointConfig.Method.ToUpper() == "POST")
-                    response = await httpClient.PostAsync(endpointConfig.EndpointUrl, content);
+                    response = await httpClient.PostAsync(resolvedUrl, content);
                 else if (endpointConfig.Method.ToUpper() == "PUT")
-                    response = await httpClient.PutAsync(endpointConfig.EndpointUrl, content);
+                    response = await httpClient.PutAsync(resolvedUrl, content);
                 else
                     throw new NotSupportedException($"Método HTTP '{endpointConfig.Method}' não suportado");
 
