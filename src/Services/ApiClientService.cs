@@ -150,6 +150,7 @@ public class ApiClientService
         catch (Exception ex)
         {
             await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, 500, ex.Message, headers);
+            _metricsService.RecordError();
             return false;
         }
     }

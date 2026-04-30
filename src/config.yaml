@@ -2,12 +2,12 @@ file:
   
   inputPaths:
 #    - "/Users/felipeseho/Desktop/bases/fastshop_rollover_2026-04-29.csv"
-#    - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
-    - "/Users/felipeseho/Desktop/bases/unifique_rollover_2026-04-29.csv"
+    - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
+#    - "/Users/felipeseho/Desktop/bases/unifique_rollover_2026-04-29.csv"
   
-  batchLines: 1
+  batchLines: 100
   startLine: 1
-  maxLines: 2 # Opcional: limita o número de linhas a processar (útil para testes)
+  # maxLines: 2 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
   csvDelimiter: ","
   checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
@@ -34,6 +34,8 @@ file:
       type: "date"
       format: "yyyy-MM-dd'T'HH:mm:ss"
 
+defaultEndpoint: "subscription_create" # Endpoint padrão caso não haja roteamento ou coluna de endpoint
+
 routing:
   column: "status"
   map:
@@ -54,7 +56,7 @@ endpoints:
     requestTimeout: 30
     retryAttempts: 3
     retryDelaySeconds: 5
-    maxRequestsPerSecond: 1
+    maxRequestsPerSecond: 100
     mapping:
       - attribute: "subscription_id"
         csvColumn: "subscription_id"
@@ -94,7 +96,7 @@ endpoints:
     requestTimeout: 30
     retryAttempts: 3
     retryDelaySeconds: 5
-    maxRequestsPerSecond: 1
+    maxRequestsPerSecond: 100
     mapping:
       - attribute: "subscription_id"
         csvColumn: "subscription_id"
