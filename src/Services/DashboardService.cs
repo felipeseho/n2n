@@ -9,7 +9,7 @@ public class DashboardService(
     AppExecutionContext context)
 {
     private readonly List<string> _logMessages = new();
-    private readonly int _maxLogMessages = 10;
+    private const int MaxLogBuffer = 500;
     
     // Application info
     // Get assembly title and version dynamically if needed
@@ -48,11 +48,8 @@ public class DashboardService(
         var formattedMessage = $"[grey]{timestamp}[/] [{color}]{levelIcon}[/] {message}";
         _logMessages.Add(formattedMessage);
         
-        // Manter apenas as últimas N mensagens
-        if (_logMessages.Count > _maxLogMessages)
-        {
+        if (_logMessages.Count > MaxLogBuffer)
             _logMessages.RemoveAt(0);
-        }
     }
 
     /// <summary>
@@ -229,21 +226,22 @@ public class DashboardService(
     {
         var metrics = metricsService.GetMetrics();
 
-        // Layout principal: Header, Body (2x2), Footer - proporções para fullscreen
+        // Layout principal: Header, Body
         var layout = new Layout("Root")
             .SplitRows(
                 new Layout("Header").Size(5),
-                new Layout("Body"),
-                new Layout("Footer").Size(13)
+                new Layout("Body")
             );
 
         // Header com informações da aplicação
         layout["Header"].Update(CreateHeaderPanel());
 
-        // Body dividido em 2 linhas (proporção automática)
+        // Body dividido em 4 linhas
         layout["Body"].SplitRows(
-            new Layout("Row1"),
-            new Layout("Row2")
+            new Layout("Row1").Size(6),
+            new Layout("Row2").Size(5),
+            new Layout("Row3").Size(4),
+            new Layout("Row4")
         );
 
         // Linha 1: Parâmetros | Arquivo (50% cada coluna)
@@ -251,21 +249,24 @@ public class DashboardService(
             new Layout("Parameters").Ratio(1),
             new Layout("File").Ratio(1)
         );
-        
+
         layout["Body"]["Row1"]["Parameters"].Update(CreateParametersPanel());
         layout["Body"]["Row1"]["File"].Update(CreateFilePanel());
 
-        // Linha 2: API | Progresso (50% cada coluna)
-        layout["Body"]["Row2"].SplitColumns(
-            new Layout("API").Ratio(1),
-            new Layout("Progress").Ratio(1)
-        );
-        
-        layout["Body"]["Row2"]["API"].Update(CreateEndpointPanel());
-        layout["Body"]["Row2"]["Progress"].Update(CreateProgressPanel(metrics));
+        // Linha 2: Dados de Execução (largura total)
+        layout["Body"]["Row2"].Update(CreateExecutionPanel());
 
-        // Footer com logs
-        layout["Footer"].Update(CreateLogsPanel());
+        // Linha 3: Endpoint (largura total, uma linha)
+        layout["Body"]["Row3"].Update(CreateEndpointPanel());
+
+        // Linha 4: Progresso | Logs (50% cada coluna)
+        layout["Body"]["Row4"].SplitColumns(
+            new Layout("Progress").Ratio(1),
+            new Layout("Logs").Ratio(1)
+        );
+
+        layout["Body"]["Row4"]["Progress"].Update(CreateProgressPanel(metrics));
+        layout["Body"]["Row4"]["Logs"].Update(CreateLogsPanel());
 
 
         return layout;
@@ -298,36 +299,13 @@ public class DashboardService(
             .AddColumn(new GridColumn().NoWrap().PadRight(2))
             .AddColumn();
 
-        // Parâmetros de arquivo
-        grid.AddRow(new Markup("[underline cyan1]Arquivo:[/]"), new Markup(""));
-        grid.AddRow("  Delimitador CSV:", $"[yellow]'{context.Configuration.File.CsvDelimiter}'[/]");
-        grid.AddRow("  Linhas por Lote:", $"[yellow]{context.Configuration.File.BatchLines:N0}[/]");
-        grid.AddRow("  Linha Inicial:", $"[yellow]{context.Configuration.File.StartLine:N0}[/]");
-        
+        grid.AddRow("Delimitador CSV:", $"[yellow]'{context.Configuration.File.CsvDelimiter}'[/]");
+        grid.AddRow("Linhas por Lote:", $"[yellow]{context.Configuration.File.BatchLines:N0}[/]");
+        grid.AddRow("Linha Inicial:", $"[yellow]{context.Configuration.File.StartLine:N0}[/]");
+
         if (context.Configuration.File.MaxLines.HasValue)
-            grid.AddRow("  Linhas Máximas:", $"[yellow]{context.Configuration.File.MaxLines.Value:N0}[/]");
-        
-        grid.AddEmptyRow();
-        
-        // Parâmetros de checkpoint
-        grid.AddRow(new Markup("[underline cyan1]Checkpoint:[/]"), new Markup(""));
-        grid.AddRow("  Diretório:", $"[yellow]{context.Configuration.File.CheckpointDirectory}[/]");
-        grid.AddRow("  ID da Execução:", $"[yellow]{context.ExecutionPaths.ExecutionId}[/]");
-        
-        // Verificar se há checkpoint existente
-        var hasCheckpoint = !string.IsNullOrEmpty(context.ExecutionPaths.CheckpointPath) && 
-                           File.Exists(context.ExecutionPaths.CheckpointPath);
-        grid.AddRow("  Status:", hasCheckpoint 
-            ? "[green]Continuando execução[/]" 
-            : "[cyan1]Nova execução[/]");
-        
-        grid.AddEmptyRow();
-        
-        // Parâmetros de log
-        grid.AddRow(new Markup("[underline cyan1]Logs:[/]"), new Markup(""));
-        grid.AddRow("  Diretório:", $"[yellow]{context.Configuration.File.LogDirectory}[/]");
-        grid.AddRow("  Detalhado:", context.IsVerbose ? "[green]Sim[/]" : "[grey]Não[/]");
-        
+            grid.AddRow("Linhas Máximas:", $"[yellow]{context.Configuration.File.MaxLines.Value:N0}[/]");
+
         if (context.IsDryRun)
         {
             grid.AddEmptyRow();
@@ -429,36 +407,27 @@ public class DashboardService(
     }
 
     /// <summary>
-    ///     Cria o painel de informações do Endpoint
+    ///     Cria o painel de informações do Endpoint (compacto)
     /// </summary>
     private Panel CreateEndpointPanel()
     {
-        var grid = new Grid()
-            .AddColumn(new GridColumn().NoWrap().PadRight(2))
-            .AddColumn();
-
         var endpoint = context.ActiveEndpoint;
+        var safeUrl = Markup.Escape(endpoint.EndpointUrl);
+        var defaultEndpoint = context.Configuration.DefaultEndpoint ?? "—";
+        var isDefault = endpoint.Name.Equals(defaultEndpoint, StringComparison.OrdinalIgnoreCase);
+        var defaultLabel = isDefault ? "[grey](padrão)[/]" : $"[grey]padrão: {defaultEndpoint}[/]";
 
-        grid.AddRow("[cyan1]Url:[/]", $"[yellow]{ShortenUrl(endpoint.EndpointUrl)}[/]");
-        grid.AddRow("[cyan1]Método:[/]", $"[green]{endpoint.Method}[/]");
-        grid.AddRow("[cyan1]Timeout:[/]", $"[yellow]{endpoint.RequestTimeout}s[/]");
-        grid.AddRow("[cyan1]Tentativas:[/]", $"[yellow]{endpoint.RetryAttempts}x[/]");
-        grid.AddRow("[cyan1]Atraso entre Tentativas:[/]", $"[yellow]{endpoint.RetryDelaySeconds}s[/]");
+        var grid = new Grid().AddColumn();
 
-        if (endpoint.Headers.Count > 0)
-        {
-            grid.AddEmptyRow();
-            grid.AddRow(new Markup("[underline cyan1]Headers:[/]"), new Markup(""));
-            
-            foreach (var header in endpoint.Headers.Take(3))
-            {
-                var value = header.Value.Length > 30 ? header.Value.Substring(0, 27) + "..." : header.Value;
-                grid.AddRow($"  {header.Key}:", $"[grey]{value}[/]");
-            }
-            
-            if (endpoint.Headers.Count > 3)
-                grid.AddRow("", $"[grey]... +{endpoint.Headers.Count - 3} headers[/]");
-        }
+        grid.AddRow(new Markup(
+            $"[cyan1]Endpoint:[/] [yellow]{endpoint.Name}[/]  {defaultLabel}"
+        ));
+        grid.AddRow(new Markup(
+            $"[green]{endpoint.Method}[/]  [grey]{safeUrl}[/]  " +
+            $"[cyan1]Timeout:[/] [yellow]{endpoint.RequestTimeout}s[/]  " +
+            $"[grey]|[/]  [cyan1]Tentativas:[/] [yellow]{endpoint.RetryAttempts}x[/]  " +
+            $"[grey]|[/]  [cyan1]Atraso:[/] [yellow]{endpoint.RetryDelaySeconds}s[/]"
+        ));
 
         return new Panel(grid)
             .Header("[bold cyan1]🌐 ENDPOINT[/]", Justify.Center)
@@ -468,12 +437,47 @@ public class DashboardService(
     }
 
     /// <summary>
-    ///     Cria o painel de logs (footer)
+    ///     Cria o painel de dados de execução (largura total)
     /// </summary>
-    private Panel CreateLogsPanel()
+    private Panel CreateExecutionPanel()
     {
         var grid = new Grid()
             .AddColumn();
+
+        var hasCheckpoint = !string.IsNullOrEmpty(context.ExecutionPaths.CheckpointPath) &&
+                            File.Exists(context.ExecutionPaths.CheckpointPath);
+
+        var checkpointStatus = hasCheckpoint ? "[green]Continuando[/]" : "[cyan1]Nova execução[/]";
+
+        var logPath = string.IsNullOrEmpty(context.ExecutionPaths.LogPath)
+            ? "[grey]—[/]"
+            : $"[grey]{context.ExecutionPaths.LogPath}[/]";
+
+        var checkpointPath = string.IsNullOrEmpty(context.ExecutionPaths.CheckpointPath)
+            ? "[grey]—[/]"
+            : $"[grey]{context.ExecutionPaths.CheckpointPath}[/]";
+
+        grid.AddRow(new Markup($"[cyan1]ID de Execução:[/] [yellow]{context.ExecutionPaths.ExecutionId}[/]  {checkpointStatus}"));
+        grid.AddRow(new Markup($"[cyan1]Log:[/] {logPath}"));
+        grid.AddRow(new Markup($"[cyan1]Checkpoint:[/] {checkpointPath}"));
+
+        return new Panel(grid)
+            .Header("[bold cyan1]🔖 EXECUÇÃO[/]", Justify.Center)
+            .BorderColor(Color.MediumPurple)
+            .Padding(0, 0)
+            .Expand();
+    }
+
+    /// <summary>
+    ///     Cria o painel de logs preenchendo o espaço disponível
+    /// </summary>
+    private Panel CreateLogsPanel()
+    {
+        // Linhas fixas: Header(5) + Row1(6) + Row2(5) + Row3(4) + 2 bordas do painel
+        var fixedRows = 5 + 6 + 5 + 4 + 2;
+        var availableLines = Math.Max(1, Console.WindowHeight - fixedRows);
+
+        var grid = new Grid().AddColumn();
 
         if (_logMessages.Count == 0)
         {
@@ -481,10 +485,9 @@ public class DashboardService(
         }
         else
         {
-            foreach (var log in _logMessages)
-            {
+            var visible = _logMessages.TakeLast(availableLines);
+            foreach (var log in visible)
                 grid.AddRow(new Markup(log));
-            }
         }
 
         return new Panel(grid)

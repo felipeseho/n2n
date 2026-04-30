@@ -1,11 +1,11 @@
 file:
   
   inputPaths:
-#    - "/Users/felipeseho/Desktop/bases/fastshop_rollover_2026-04-29.csv"
-    - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
+    - "/Users/felipeseho/Desktop/bases/fastshop_rollover_2026-04-29.csv"
+#    - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
 #    - "/Users/felipeseho/Desktop/bases/unifique_rollover_2026-04-29.csv"
   
-  batchLines: 100
+  batchLines: 500
   startLine: 1
   # maxLines: 2 # Opcional: limita o número de linhas a processar (útil para testes)
   logDirectory: "logs" # Diretório onde os logs serão salvos
@@ -46,8 +46,8 @@ endpoints:
   - name: "subscription_create"
     
     ###### TROCAR PARTNER NA URL
-    # endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
-    endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
+    endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
+    # endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
 
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
@@ -86,8 +86,8 @@ endpoints:
   - name: "subscription_delete"
     
     ###### TROCAR PARTNER NA URL
-    #endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
-    endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
+    endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
+    #endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
 
     # headers:
     #   Authorization: "Bearer seu-token-aqui"
