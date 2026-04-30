@@ -210,7 +210,9 @@ public class DashboardService(
         AnsiConsole.MarkupLine($"[grey]Progresso:[/] {metrics.ProgressPercentage:F1}% ([yellow]{metrics.ProcessedLines:N0}[/] / [grey]{metrics.TotalLines:N0}[/])");
         AnsiConsole.MarkupLine($"[green]✅ Sucessos:[/] {metrics.SuccessCount:N0} ({metrics.SuccessRate:F1}%)");
         AnsiConsole.MarkupLine($"[red]❌ Erros:[/] {metrics.ErrorCount:N0} ({metrics.ErrorRate:F1}%)");
-        AnsiConsole.MarkupLine($"[cyan1]⏱️  Tempo:[/] {FormatTimeSpan(metrics.ElapsedTime)} | [green]🚀 {metrics.LinesPerSecond:F1}[/] linhas/s");
+        AnsiConsole.MarkupLine($"[cyan1]⏱️  Decorrido:[/] {FormatTimeSpan(metrics.ElapsedTime)} | [green]🚀 {metrics.LinesPerSecond:F1}[/] linhas/s");
+        if (metrics.ProcessedLines > 0 && metrics.ProcessedLines < metrics.TotalLines)
+            AnsiConsole.MarkupLine($"[cyan1]⏳ Estimado:[/] [yellow]{FormatTimeSpan(metrics.EstimatedTimeRemaining)}[/]");
         
         if (_logMessages.Count > 0)
         {
@@ -531,7 +533,6 @@ public class DashboardService(
             statsGrid.AddRow("[grey]⏭️  Puladas:[/]", $"[grey]{metrics.SkippedLines:N0}[/]");
 
         grid.AddRow(statsGrid);
-        grid.AddEmptyRow();
 
         // Tempo e velocidade
         var timeGrid = new Grid()
@@ -541,8 +542,14 @@ public class DashboardService(
         var elapsed = metrics.ElapsedTime;
         timeGrid.AddRow("[cyan1]⏱️  Decorrido:[/]", $"[yellow]{FormatTimeSpan(elapsed)}[/]");
 
-        if (metrics.ProcessedLines > 0 && metrics.ProcessedLines < metrics.TotalLines)
-            timeGrid.AddRow("[cyan1]⏳ Estimado:[/]", $"[yellow]{FormatTimeSpan(metrics.EstimatedTimeRemaining)}[/]");
+        string estimatedLabel;
+        if (metrics.ProcessedLines == 0)
+            estimatedLabel = "[grey]Calculando...[/]";
+        else if (metrics.ProcessedLines >= metrics.TotalLines)
+            estimatedLabel = "[green]Concluído[/]";
+        else
+            estimatedLabel = $"[yellow]{FormatTimeSpan(metrics.EstimatedTimeRemaining)}[/]";
+        timeGrid.AddRow("[cyan1]⏳ Estimado:[/]", estimatedLabel);
 
         timeGrid.AddRow("[cyan1]🚀 Velocidade:[/]", $"[green]{metrics.LinesPerSecond:F1}[/] [grey]linhas/s[/]");
 
