@@ -1,18 +1,23 @@
 file:
 
   inputPaths:
-    #    - "/Users/felipeseho/Desktop/bases/fastshop_rollover_2026-04-29.csv"
-    - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
-  #    - "/Users/felipeseho/Desktop/bases/unifique_rollover_2026-04-29.csv"
+  #    - "/Users/felipeseho/Desktop/bases/fastshop_rollover_2026-04-29.csv"
+  #  - "/Users/felipeseho/Desktop/bases/ligga_rollover_2026-04-29.csv"
+      - "/Users/felipeseho/Desktop/bases/unifique_rollover_2026-04-29.csv"
+  #    - "/Users/felipeseho/Desktop/bases/seho_test.csv"
 
-  batchLines: 2000
+  batchLines: 200
   startLine: 1
-  maxLines: 10 # Opcional: limita o número de linhas a processar (útil para testes)
+  # maxLines: 1 # Opcional: limita o número de linhas a processar (útil para testes)
   csvDelimiter: ","
 
-  logDirectory: "logs" # Diretório onde os logs serão salvos
-  checkpointDirectory: "checkpoints" # Diretório onde os checkpoints serão salvos
-  
+  log:
+    path: "logs" # Diretório onde os logs serão salvos
+    level: "DEBUG" # Nível de log (DEBUG, INFO, WARNING, ERROR)
+
+  checkpoint:
+    path: "checkpoints" # Diretório onde os checkpoints serão salvos
+
   columns:
     - column: "subscription_id"
       type: "string"
@@ -49,9 +54,7 @@ api:
   endpoints:
     - name: "subscription_create"
 
-      ###### TROCAR PARTNER NA URL
-      endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hu\
-        b-connect-api/{partner}/v2/subscription"
+      endpointUrl: "https://api-corporativo.whitelabel.com.br/hub/v1/b2b/{partner}/v2/subscription"
       # endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/{partner}/v2/subscription"
 
       # headers:
@@ -61,7 +64,7 @@ api:
       requestTimeout: 30
       retryAttempts: 3
       retryDelaySeconds: 5
-      maxRequestsPerSecond: 2
+      maxRequestsPerSecond: 100
       mapping:
         - attribute: "subscription_id"
           csvColumn: "subscription_id"
@@ -90,10 +93,7 @@ api:
 
     - name: "subscription_delete"
 
-      ###### TROCAR PARTNER NA URL
-      endpointUrl: "https://api-corporativo-homol.whitelabel.com.br/hub-connect/v2/hu\
-        b-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{camp\
-        aign}"
+      endpointUrl: "https://api-corporativo.whitelabel.com.br/hub/v1/b2b/{partner}/v2/subscription/{subscription_id}/{campaign}"
       #endpointUrl: "https://test-seho.requestcatcher.com/hub-connect/v2/hub-connect-api/partner/{partner}/v2/subscription/{subscription_id}/{campaign}"
 
       # headers:
@@ -105,7 +105,5 @@ api:
       retryDelaySeconds: 5
       maxRequestsPerSecond: 100
       mapping:
-        - attribute: "subscription_id"
-          csvColumn: "subscription_id"
-        - attribute: "campaign"
-          csvColumn: "campaign"
+        - attribute: "subscriptionEndDate"
+          csvColumn: "event_date"

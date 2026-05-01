@@ -8,11 +8,11 @@ public class FileConfiguration
     public string InputPath { get; set; } = string.Empty;
     public List<string> InputPaths { get; set; } = new();
     public int BatchLines { get; set; } = 100;
-    public string LogDirectory { get; set; } = "logs";
     public string CsvDelimiter { get; set; } = ",";
     public int StartLine { get; set; } = 1;
     public int? MaxLines { get; set; }
-    public string CheckpointDirectory { get; set; } = "checkpoints";
+    public LogSettings Log { get; set; } = new();
+    public CheckpointSettings Checkpoint { get; set; } = new();
     public List<ColumnMapping> Columns { get; set; } = new();
 
     /// <summary>

@@ -40,7 +40,7 @@ public class ConfigurationService
             config.File.BatchLines = options.BatchLines.Value;
 
         if (!string.IsNullOrWhiteSpace(options.LogDirectory))
-            config.File.LogDirectory = options.LogDirectory;
+            config.File.Log.Path = options.LogDirectory;
 
         if (!string.IsNullOrWhiteSpace(options.CsvDelimiter))
             config.File.CsvDelimiter = options.CsvDelimiter;
@@ -202,8 +202,9 @@ public class ConfigurationService
         return new ExecutionPaths
         {
             ExecutionId = executionId,
-            LogPath = Path.Combine(config.File.LogDirectory, $"process_{executionId}{fileIdentifier}.log"),
-            CheckpointPath = Path.Combine(config.File.CheckpointDirectory, $"checkpoint_{executionId}{fileIdentifier}.json"),
+            LogPath = Path.Combine(config.File.Log.Path, $"process_{executionId}{fileIdentifier}.log"),
+            ErrorLogPath = Path.Combine(config.File.Log.Path, $"errors_{executionId}{fileIdentifier}.csv"),
+            CheckpointPath = Path.Combine(config.File.Checkpoint.Path, $"checkpoint_{executionId}{fileIdentifier}.json"),
             CurrentInputFile = inputFile ?? string.Empty
         };
     }
@@ -213,11 +214,10 @@ public class ConfigurationService
     /// </summary>
     public void EnsureDirectoriesExist(Configuration config)
     {
-        if (!string.IsNullOrEmpty(config.File.LogDirectory) && !Directory.Exists(config.File.LogDirectory))
-            Directory.CreateDirectory(config.File.LogDirectory);
+        if (!string.IsNullOrEmpty(config.File.Log.Path) && !Directory.Exists(config.File.Log.Path))
+            Directory.CreateDirectory(config.File.Log.Path);
 
-        if (!string.IsNullOrEmpty(config.File.CheckpointDirectory) &&
-            !Directory.Exists(config.File.CheckpointDirectory))
-            Directory.CreateDirectory(config.File.CheckpointDirectory);
+        if (!string.IsNullOrEmpty(config.File.Checkpoint.Path) && !Directory.Exists(config.File.Checkpoint.Path))
+            Directory.CreateDirectory(config.File.Checkpoint.Path);
     }
 }

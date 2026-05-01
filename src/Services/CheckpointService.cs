@@ -45,6 +45,8 @@ public class CheckpointService
                 Delimiter = context.Configuration.File.CsvDelimiter,
                 StartLine = context.Configuration.File.StartLine,
                 MaxLines = context.Configuration.File.MaxLines,
+                LogPath = context.Configuration.File.Log?.Path,
+                LogLevel = context.Configuration.File.Log?.Level,
                 DryRun = context.IsDryRun,
                 Verbose = context.IsVerbose,
                 EndpointNameOverride = context.CommandLineOptions.EndpointName

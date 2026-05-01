@@ -110,9 +110,11 @@ public class CsvProcessorService
             var configService = new ConfigurationService();
             var executionPaths = configService.GenerateExecutionPaths(_context.Configuration, executionId, inputFilePath);
 
+            // Atualizar paths no context antes de logar (LoggingService usa _context.ExecutionPaths)
+            _context.ExecutionPaths = executionPaths;
+
             // Criar checkpoint e log registrando que o arquivo não foi encontrado
             await _loggingService.LogError(
-                executionPaths.LogPath,
                 new CsvRecord { LineNumber = 0, Data = new Dictionary<string, string>() },
                 404,
                 $"Arquivo não encontrado: {inputFilePath}",
@@ -281,7 +283,7 @@ public class CsvProcessorService
                 var validationError = _validationService.ValidateRecord(record, _context.Configuration.File.Columns);
                 if (validationError != null)
                 {
-                    await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, 400, validationError, headers);
+                    await _loggingService.LogError(record, 400, validationError, headers);
                     totalErrors++;
                     _metricsService.RecordValidationError();
                     

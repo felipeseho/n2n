@@ -1,114 +1,153 @@
 using n2n.Models;
-using Spectre.Console;
 
 namespace n2n.Services;
 
+public enum AppLogLevel { DEBUG = 0, INFO = 1, WARNING = 2, ERROR = 3 }
+
 /// <summary>
-///     Serviço para logging de erros
+///     Serviço para logging multi-nível: texto (todos os níveis) e CSV de erros
 /// </summary>
 public class LoggingService
 {
-    private readonly SemaphoreSlim _logSemaphore = new(1, 1);
+    private readonly SemaphoreSlim _csvSemaphore = new(1, 1);
+    private readonly SemaphoreSlim _textSemaphore = new(1, 1);
     private readonly DashboardService _dashboardService;
+    private readonly AppExecutionContext _context;
 
-    public LoggingService(DashboardService dashboardService)
+    public LoggingService(DashboardService dashboardService, AppExecutionContext context)
     {
         _dashboardService = dashboardService;
+        _context = context;
     }
 
-    /// <summary>
-    ///     Registra um erro no arquivo de log
-    /// </summary>
-    public async Task LogError(string logPath, CsvRecord record, int httpCode,
-        string errorMessage, string[] headers)
+    private AppLogLevel ConfiguredLevel
     {
-        await _logSemaphore.WaitAsync();
+        get
+        {
+            var levelStr = _context.Configuration?.File?.Log?.Level?.ToUpper() ?? "INFO";
+            return Enum.TryParse<AppLogLevel>(levelStr, out var level) ? level : AppLogLevel.INFO;
+        }
+    }
+
+    private bool ShouldLog(AppLogLevel level) => level >= ConfiguredLevel;
+
+    private async Task WriteToTextLogAsync(AppLogLevel level, string message)
+    {
+        var logPath = _context.ExecutionPaths?.LogPath;
+        if (string.IsNullOrEmpty(logPath)) return;
+
+        await _textSemaphore.WaitAsync();
         try
         {
-            var logExists = File.Exists(logPath);
-            using var writer = new StreamWriter(logPath, true);
+            var dir = Path.GetDirectoryName(logPath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
 
-            // Escrever cabeçalho se arquivo não existir
-            if (!logExists)
-            {
-                var headerLine = "LineNumber," + string.Join(",", headers) + ",HttpCode,ErrorMessage";
-                await writer.WriteLineAsync(headerLine);
-            }
-
-            // Escrever linha de erro
-            var values = new List<string> { record.LineNumber.ToString() };
-            foreach (var header in headers)
-            {
-                var value = record.Data.GetValueOrDefault(header, string.Empty);
-                // Escapar valores com vírgula ou aspas
-                if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
-                    value = $"\"{value.Replace("\"", "\"\"")}\"";
-                values.Add(value);
-            }
-
-            // Escapar mensagem de erro
-            var escapedError = errorMessage.Replace("\"", "\"\"");
-            if (escapedError.Contains(',') || escapedError.Contains('"') || escapedError.Contains('\n'))
-                escapedError = $"\"{escapedError}\"";
-
-            values.Add(httpCode.ToString());
-            values.Add(escapedError);
-
-            await writer.WriteLineAsync(string.Join(",", values));
-
-            // Enviar para o dashboard
-            var shortMessage = errorMessage.Length > 60 ? errorMessage.Substring(0, 57) + "..." : errorMessage;
-            _dashboardService.AddLogMessage($"Erro linha {record.LineNumber}: {EscapeMarkup(shortMessage)}", "ERROR");
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            var line = $"{timestamp} [{level,-7}] {message}{Environment.NewLine}";
+            await File.AppendAllTextAsync(logPath, line);
         }
         finally
         {
-            _logSemaphore.Release();
+            _textSemaphore.Release();
         }
     }
 
     /// <summary>
-    ///     Escapa caracteres especiais do markup do Spectre.Console
+    ///     Registra erro: escreve no log de texto e no CSV de erros
     /// </summary>
-    private static string EscapeMarkup(string text)
+    public async Task LogError(CsvRecord record, int httpCode, string errorMessage, string[] headers)
     {
-        return text.Replace("[", "[[").Replace("]", "]]");
+        // CSV de erros (dados da linha + código HTTP + mensagem)
+        await _csvSemaphore.WaitAsync();
+        try
+        {
+            var errorLogPath = _context.ExecutionPaths?.ErrorLogPath;
+            if (!string.IsNullOrEmpty(errorLogPath))
+            {
+                var dir = Path.GetDirectoryName(errorLogPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                var logExists = File.Exists(errorLogPath);
+                using var writer = new StreamWriter(errorLogPath, true);
+
+                if (!logExists)
+                {
+                    var headerLine = "LineNumber," + string.Join(",", headers) + ",HttpCode,ErrorMessage";
+                    await writer.WriteLineAsync(headerLine);
+                }
+
+                var values = new List<string> { record.LineNumber.ToString() };
+                foreach (var header in headers)
+                {
+                    var value = record.Data.GetValueOrDefault(header, string.Empty);
+                    if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+                        value = $"\"{value.Replace("\"", "\"\"")}\"";
+                    values.Add(value);
+                }
+
+                var escapedError = errorMessage.Replace("\"", "\"\"");
+                if (escapedError.Contains(',') || escapedError.Contains('"') || escapedError.Contains('\n'))
+                    escapedError = $"\"{escapedError}\"";
+
+                values.Add(httpCode.ToString());
+                values.Add(escapedError);
+                await writer.WriteLineAsync(string.Join(",", values));
+            }
+        }
+        finally
+        {
+            _csvSemaphore.Release();
+        }
+
+        // Log de texto
+        await WriteToTextLogAsync(AppLogLevel.ERROR, $"Line {record.LineNumber}: HTTP {httpCode} - {errorMessage}");
+
+        // Dashboard
+        var shortMessage = errorMessage.Length > 60 ? errorMessage[..57] + "..." : errorMessage;
+        _dashboardService.AddLogMessage($"Erro linha {record.LineNumber}: {EscapeMarkup(shortMessage)}", "ERROR");
     }
 
     /// <summary>
-    ///     Exibe informação no console
+    ///     Log de debug assíncrono — usado para dados de requisição HTTP
     /// </summary>
+    public async Task LogDebugAsync(string message)
+    {
+        if (!ShouldLog(AppLogLevel.DEBUG)) return;
+        await WriteToTextLogAsync(AppLogLevel.DEBUG, message);
+    }
+
+    /// <summary>
+    ///     Log de debug fire-and-forget
+    /// </summary>
+    public void LogDebug(string message)
+    {
+        if (!ShouldLog(AppLogLevel.DEBUG)) return;
+        _ = WriteToTextLogAsync(AppLogLevel.DEBUG, message);
+    }
+
     public void LogInfo(string message)
     {
+        if (ShouldLog(AppLogLevel.INFO))
+            _ = WriteToTextLogAsync(AppLogLevel.INFO, message);
         _dashboardService.AddLogMessage(EscapeMarkup(message), "INFO");
     }
 
-    /// <summary>
-    ///     Exibe aviso no console
-    /// </summary>
     public void LogWarning(string message)
     {
-        if (_dashboardService == null)
-        {
-            AnsiConsole.MarkupLine($"[yellow]⚠[/] {EscapeMarkup(message)}");
-        }
-        else
-        {
-            _dashboardService.AddLogMessage(EscapeMarkup(message), "WARNING");
-        }
+        if (ShouldLog(AppLogLevel.WARNING))
+            _ = WriteToTextLogAsync(AppLogLevel.WARNING, message);
+        _dashboardService.AddLogMessage(EscapeMarkup(message), "WARNING");
     }
 
-    /// <summary>
-    ///     Exibe sucesso no console
-    /// </summary>
     public void LogSuccess(string message)
     {
-        if (_dashboardService == null)
-        {
-            AnsiConsole.MarkupLine($"[green]✓[/] {EscapeMarkup(message)}");
-        }
-        else
-        {
-            _dashboardService.AddLogMessage(EscapeMarkup(message), "SUCCESS");
-        }
+        if (ShouldLog(AppLogLevel.INFO))
+            _ = WriteToTextLogAsync(AppLogLevel.INFO, $"[SUCCESS] {message}");
+        _dashboardService.AddLogMessage(EscapeMarkup(message), "SUCCESS");
     }
+
+    private static string EscapeMarkup(string text) =>
+        text.Replace("[", "[[").Replace("]", "]]");
 }

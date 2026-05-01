@@ -36,7 +36,11 @@ public class CheckpointConfiguration
     public string Delimiter { get; set; } = string.Empty;
     public int? StartLine { get; set; }
     public int? MaxLines { get; set; }
-    
+
+    // Log
+    public string? LogPath { get; set; }
+    public string? LogLevel { get; set; }
+
     // Opções de execução
     public bool DryRun { get; set; }
     public bool Verbose { get; set; }

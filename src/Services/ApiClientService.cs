@@ -149,7 +149,7 @@ public class ApiClientService
         }
         catch (Exception ex)
         {
-            await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, 500, ex.Message, headers);
+            await _loggingService.LogError(record, 500, ex.Message, headers);
             _metricsService.RecordError();
             return false;
         }
@@ -206,6 +206,16 @@ public class ApiClientService
         {
             attempts++;
 
+            // Debug: logar dados completos da requisição
+            var attemptSuffix = attempts > 1 ? $" [tentativa {attempts}/{endpointConfig.RetryAttempts}]" : string.Empty;
+            _loggingService.LogDebug($"→ {endpointConfig.Method.ToUpper()} {resolvedUrl}{attemptSuffix}");
+            if (endpointConfig.Headers?.Count > 0)
+            {
+                var headersStr = string.Join(", ", endpointConfig.Headers.Select(h => $"{h.Key}: {h.Value}"));
+                _loggingService.LogDebug($"  Headers: {headersStr}");
+            }
+            _loggingService.LogDebug($"  Body: {json}");
+
             try
             {
                 // Criar conteúdo da requisição
@@ -254,8 +264,7 @@ public class ApiClientService
 
                     _metricsService.RecordHttpStatusCode((int)response.StatusCode);
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, (int)response.StatusCode,
-                        errorMessage, headers);
+                    await _loggingService.LogError(record, (int)response.StatusCode, errorMessage, headers);
                     _metricsService.RecordError();
                     return false;
                 }
@@ -289,7 +298,7 @@ public class ApiClientService
         }
 
         // Todas as tentativas falharam
-        await _loggingService.LogError(_context.ExecutionPaths.LogPath, record, 500,
+        await _loggingService.LogError(record, 500,
             lastException?.Message ?? "Todas as tentativas falharam", headers);
         _metricsService.RecordError();
         return false;
