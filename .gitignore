@@ -36,3 +36,6 @@ config-production.yaml
 # Checkpointing and temporary files
 checkpoints/
 temp/
+
+
+.claude/
